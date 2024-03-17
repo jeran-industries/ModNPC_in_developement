@@ -1,0 +1,14 @@
+Selfroles:
+-JSON.Files with the Message_ID
+-If new Selfroles added, create file:
+    ->filename: Message_ID
+    ->contents: emojis and roles
+-Role must be lower ranked than the bot top role.
+-Can be improved
+    ->to get all data like Message_ID and Channel_ID u reply on the message where the selfreaction should be
+    ->buttons instead of reaction
+
+-if the bot is joining a server, it should create a new folder with the guild id(logs/polls/selfroles/members).
+
+Setup:
+- Words that should be filtered

@@ -1,0 +1,18 @@
+ModNPC is a discord bot(programmed with discord.py) in developement state and is steadily improved.
+ModNPC features:
+-Leveling:
+->xp for messages
+->xp for vcs(only if 2 members are in the same voicechat)
+-Selfroles:
+->Roles that can be added to the profile by reacting to the message
+-Polls(not stable):
+->Up to 9 options
+->custom votecounts
+ModNPC's problems:
+-database problems in polls:
+->switching right now from json to sqlite
+-no application commands yet
+Plans for ModNPC:
+-logs
+-custom vcs
+-ban/kick/timeout/jail system

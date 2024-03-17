@@ -1,0 +1,2 @@
+000001:
+-> cant find the row in the guildtable with the guildid

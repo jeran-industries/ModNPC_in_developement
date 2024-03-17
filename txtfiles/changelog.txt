@@ -1,0 +1,49 @@
+completed:
+0.1: adding v1 of selfrolessystem
+0.2: adding v1 of pollsystem with up to 9 options and invidual counts of votes\n
+0.2.1: adding to pollsystem stopbutton and resetbutton\n
+0.2.2: fixing some mayor issues(selfroles shouldnt be created without a role existing for it) in the selfrolessystem and solving some performance issues
+0.3: adding v1 of levelingsystem
+0.4: adding helpcommand
+0.5: adding dicethrowing with different dices and also multiple dices
+0.6: adding v2 of pollsystem by fixing issues with overloading pollsystem by changing the database from json to sqlite
+0.6.1: adding a tenth choice
+0.7: adding v2 of levelingsystem
+0.7.1: building levelingsystem in sqlite
+0.7.2: adding pushmessages if new level is reached
+0.7.3: adding leaderboard
+0.7.4: setting levelpingchannel
+0.8: adding v2 of selfrolessystem
+0.8.1: changed to sqlite
+0.8.2: changing to slashcommands
+0.9: adding v3 of pollsystem by changing to slashcommands
+0.10: adding botupdatechannel and setupcommand
+0.11: adding v3 of levelingsystem
+    0.11.1: adding custom levelroles(Being tested)
+
+
+in progress:
+adding logs based on sqlite(in progress)
+    adding messagelogs
+        log if message is sent(completed)
+        log if message is edited(in progress)
+        log if message is deleted(in progress)
+    adding reactionlogs
+adding custom welcomemessages(being tested)
+adding anonymous messages(in progress)
+adding a button to list all levelroles
+
+in future:
+adding errorhandling
+adding v4 of pollsystem: expanding by adding buttons
+adding v3 of selfrolessystem
+    changing database from json to sqlite
+    adding buttons to selfrolessystem
+    adding dropmenu
+adding customvcs
+adding webinterface(being planned)
+adding socialmediapings
+adding arenawar(being planned)
+adding minigame called koimerge(being planned)
+    adding appversion of koimerge
+adding system for stats

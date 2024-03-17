@@ -1,0 +1,57 @@
+ERROR:
+AttributeError: 'User' object has no attribute 'guild'
+[2024-02-14 01:43:00] [ERROR   ] discord.client: Ignoring exception in on_message
+Traceback (most recent call last):
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/client.py", line 441, in _run_event
+    await coro(*args, **kwargs)
+  File "/home/steven/ModNPC/ModNPC_2024_02_09_001_running/bot.py", line 50, in on_message
+    new_message(message) #levelingsystem
+  File "/home/steven/ModNPC/ModNPC_2024_02_09_001_running/levelsystem.py", line 32, in new_message
+    new_member(member)
+  File "/home/steven/ModNPC/ModNPC_2024_02_09_001_running/membermanagement.py", line 11, in new_member
+    file_name = "./Member/" + str(member.guild.id) + "/" + str(member.id) + ".json"
+
+Description of the error:
+The problem here is that if a bot writes a message, the bot isnt a member, he is a user. Because of that u cant access the guildid via the member variable
+
+Solution:
+
+
+ERROR:
+[2024-02-13 23:42:20] [ERROR   ] discord.client: Attempting a reconnect in 1.76s
+Traceback (most recent call last):
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/client.py", line 659, in connect
+    await self.ws.poll_event()
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/gateway.py", line 646, in poll_event
+    raise ConnectionClosed(self.socket, shard_id=self.shard_id, code=code) from None
+discord.errors.ConnectionClosed: Shard ID None WebSocket closed with 1000
+
+Description of the error:
+The problem here is that the bot disconnects and closes the WebSocket. He reconnects but you cant speak with him for a few seconds. This is problem. 
+
+Solution:
+
+
+ERROR:
+[2024-02-18 22:40:45] [ERROR   ] discord.ext.commands.bot: Ignoring exception in command setlevelpingchannel
+Traceback (most recent call last):
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/ext/commands/core.py", line 235, in wrapped
+    ret = await coro(*args, **kwargs)
+  File "/home/steven/ModNPC/ModNPC_2024_02_18_001_running/bot.py", line 140, in setlevelpingchannel
+    await setlevelpingchannelcommand(ctx, link)
+  File "/home/steven/ModNPC/ModNPC_2024_02_18_001_running/levelsystem.py", line 181, in setlevelpingchannelcommand
+    linkguildid = channellink2guildid(link)
+  File "/home/steven/ModNPC/ModNPC_2024_02_18_001_running/link2id.py", line 25, in channellink2guildid
+    channel_id = parts[-2]
+IndexError: list index out of range
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/ext/commands/bot.py", line 1350, in invoke
+    await ctx.command.invoke(ctx)
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/ext/commands/core.py", line 1029, in invoke
+    await injected(*ctx.args, **ctx.kwargs)  # type: ignore
+  File "/home/steven/.local/lib/python3.10/site-packages/discord/ext/commands/core.py", line 244, in wrapped
+    raise CommandInvokeError(exc) from exc
+discord.ext.commands.errors.CommandInvokeError: Command raised an exception: IndexError: list index out of range

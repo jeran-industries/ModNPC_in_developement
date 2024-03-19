@@ -15,13 +15,10 @@ import time
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
-from link2id import link2serverid, link2channelid, link2messageid
-from emoji2role import emoji2role
 from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
-from reactionlog import new_reaction_4_log, new_unreaction_4_log
 from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, setlevelpingchannelcommand, add_level_role_command, remove_level_role_command, claimcommand
-from messagelog import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog
+from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate
 from membermanagement import new_member
 from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
@@ -70,7 +67,7 @@ async def ten_minute_loop():
 async def on_message(message):
     await bot.process_commands(message) 
     #print(message)
-    messagesenteventlog(message) #messagelog
+    await messagesenteventlog(message) #messagelog
     await new_message(bot, message) #levelingsystem  
     
 @bot.event
@@ -81,22 +78,26 @@ async def on_message_edit(before, after):
 async def on_message_deleted(message):
     messagedeletedeventlog(message)
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    await voicechatupdate(member, after, before)
+
 #Simpletestcommand    
 @bot.command()
 async def status(ctx):
     await ctx.reply('Hi, im here online')
 
-@bot.command()
-async def Ineedhelp(ctx):
-    await answer4help(ctx)
+#@bot.command()
+#async def Ineedhelp(ctx):
+#    await answer4help(ctx)
 
-@bot.command()
-async def Ineedhelpandamamod(ctx):
-    await answer4help4mods(ctx)
+#@bot.command()
+#async def Ineedhelpandamamod(ctx):
+#    await answer4help4mods(ctx)
 
-@bot.command()
-async def Ineedhelpwithsetup(ctx):
-    await helpwithsetup(ctx)
+#@bot.command()
+#async def Ineedhelpwithsetup(ctx):
+#    await helpwithsetup(ctx)
 
 @bot.tree.command()
 async def setup(interaction:discord.Interaction):   
@@ -192,7 +193,7 @@ async def testwelcomemessage(interaction: discord.Interaction, member: discord.M
 #syncing
 @bot.command()
 async def sync(ctx):
-    await synccommand(ctx, bot)
+    await synccommand(ctx, bot, BOTLISTTOKEN)
 
 @bot.event
 async def on_raw_reaction_add(payload): #reactionadded trigger

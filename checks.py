@@ -24,6 +24,22 @@ async def check4botupdatechannel(interaction):
     else:
         return(True)
     
+async def check4dm(interaction):
+    membername = interaction.user.name
+    if str(interaction.channel) == f"Direct Message with {membername}":
+        embed = discord.Embed(title=f'Error', description=f"You can't use this command in direct messages.", color=discord.Color.red())
+        await interaction.response.send_message(embed = embed)
+        return(True)
+    else:
+        return(False)
+
+async def check4dm_message(message):
+    print(str(message.channel))
+    if str(message.channel)[0-13] == "Direct Message":
+        return(True)
+    else:
+        return(False)
+
 async def check4upvotebotlist(bot, botlisttoken):
     botid = 1144006301765095484
     url = f"https://discordbotlist.com/api/bots/{botid}/upvotes"

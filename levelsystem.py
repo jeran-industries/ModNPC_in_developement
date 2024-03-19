@@ -10,6 +10,7 @@ from datetime import datetime
 #own modules:
 from membermanagement import new_member
 from link2id import channellink2channelid, channellink2guildid
+from checks import check4dm, check4dm_message
 
 
 async def new_message(bot, message): #make messagecounter bigger in json file bigger
@@ -37,20 +38,24 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
     file_name = "./database/database.db"
     connection = sqlite3.connect(file_name) #connect to polldatabase
     cursor = connection.cursor()
-
+    try:
+        guildid = message.guild.id
+    except AttributeError:
+        guildid = 0
     cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-    if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (message.author.guild.id, message.author.id)).fetchone()) is not None: 
+    if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id)).fetchone()) is not None: 
         if AttributeError:
-            print(message.author)
-        cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (message.author.guild.id, message.author.id))
-        messagessentguild = next(cursor, [None])[0]
-        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (message.author.guild.id, message.author.id))
-        xpguild = next(cursor, [None])[0]
-        cursor.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentguild + 1, message.author.guild.id, message.author.id))
-        connection.commit()
-        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 1, message.author.guild.id, message.author.id))
-        await new_level_ping(bot, message.author.id, message.author.guild.id, xpguild, xpguild + 1)
-        connection.commit()
+            pass
+        if guildid == 0:
+            cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
+            messagessentguild = next(cursor, [None])[0]
+            cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
+            xpguild = next(cursor, [None])[0]
+            cursor.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentguild + 1, guildid, message.author.id))
+            connection.commit()
+            cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 1, guildid, message.author.id))
+            await new_level_ping(bot, message.author.id, guildid, xpguild, xpguild + 1)
+            connection.commit()
 
         cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
         messagessentglobal = next(cursor, [None])[0]
@@ -67,7 +72,6 @@ async def new_minute_in_vc(bot):
     for guild in bot.guilds:
         for vc in guild.voice_channels:
             for member in vc.members:
-                print(len(member.voice.channel.members))
                 if len(member.voice.channel.members) > 1:
                     #file_name = "./Member/" + str(guild.id) + "/" + str(member.id) + ".json"
                     #if os.path.exists(file_name):
@@ -126,15 +130,19 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
         member = mentionedmember
     #if member == None:
     #    interaction.response.send_message(f"There was never such a member on the server!")
+    try:
+        guildid = member.guild.id
+    except AttributeError:
+        guildid = 0
     file_name = "./database/database.db"
     connection = sqlite3.connect(file_name) #connect to polldatabase
     cursor = connection.cursor()
     
-    cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+    cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
     messagessentguild = next(cursor, [None])[0]
-    cursor.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+    cursor.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
     voicetimeguild = next(cursor, [None])[0]
-    cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+    cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
     xpguild = next(cursor, [None])[0]
     level = math.floor((xpguild ** 0.5) / 5)
     # Create the embed
@@ -270,14 +278,18 @@ async def checkleaderboard(interaction, memberid = None):
     filename = "./database/database.db"
     async with aiosqlite.connect(filename) as connection:
         cursor = await connection.cursor()
+        try:
+            guildid = interaction.guild.id
+        except AttributeError:
+            guildid = 0
         if memberid is not None:
             # Check rank for a specific member
-            await cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (interaction.guild.id, memberid))
+            await cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
             row = await cursor.fetchone()
             if row is not None:
                 xp = row[0]
                 # Count members with more XP than the searched member
-                await cursor.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ? AND xp > ?", (interaction.guild.id, xp))
+                await cursor.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ? AND xp > ?", (guildid, xp))
                 place = await cursor.fetchone()
                 return place[0] + 1
             else:
@@ -289,22 +301,30 @@ async def checkleaderboard(interaction, memberid = None):
             embed = discord.Embed(title='Leaderboard:', color=discord.Color.green())
             guild = interaction.guild
             while i <= 10:
-                await cursor.execute("SELECT xp, memberid FROM membertable WHERE guildid = ? AND xp < ? ORDER BY xp DESC", (interaction.guild.id, max_xp))
+                await cursor.execute("SELECT xp, memberid FROM membertable WHERE guildid = ? AND xp < ? ORDER BY xp DESC", (guildid, max_xp))
                 row = await cursor.fetchone()
                 if row:
                     xp, memberid = row
-                    member = guild.get_member(memberid)
-                    if member:
-                        embed.add_field(name=f"Place #{i}:", value=member.display_name, inline=False)
-                        i += 1
-                    max_xp = xp
+                    if guildid != 0:
+                        member = guild.get_member(memberid)
+                        memberdisplayname = member.display_name
+                        if member:
+                            embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
+                            i += 1
+                        max_xp = xp
+                    else:
+                        memberdisplayname = f"<@{memberid}>"
+                        if memberdisplayname:
+                            embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
+                            i += 1
+                        max_xp = xp
                 else:
                     break  # No more results
             await interaction.response.send_message(embed=embed)
 
 async def addxp2user(interaction, bot, xptoadd, mentionedmember):
     member = interaction.user
-    if member.guild_permissions.administrator:
+    if await check4dm(interaction) == False and member.guild_permissions.administrator:
         if mentionedmember != None:
             member = mentionedmember
         #v2:
@@ -334,7 +354,7 @@ async def addxp2user(interaction, bot, xptoadd, mentionedmember):
 
 async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
     member = interaction.user
-    if member.guild_permissions.administrator:
+    if await check4dm(interaction) and member.guild_permissions.administrator:
         if mentionedmember != None:
             member = mentionedmember
         #v2:

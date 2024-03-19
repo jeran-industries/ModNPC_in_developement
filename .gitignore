@@ -1,3 +1,4 @@
 .env
 /testfiles/
 /database/
+/__pycache__/

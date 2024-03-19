@@ -38,8 +38,11 @@ def new_member(member): #new member -> new jsonfile with member_id
     connection = sqlite3.connect(file_name) #connect to polldatabase
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-    if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id)).fetchone()) is None:
-        cursor.execute("INSERT INTO membertable VALUES (?, ?, ?, ?, ?, ?, ?)", (member.guild.id, member.id, 0, 0, 0, "Joined", str(datetime.datetime.now(datetime.timezone.utc)))) #write into the table the data
+    try:
+        if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id)).fetchone()) is None:
+            cursor.execute("INSERT INTO membertable VALUES (?, ?, ?, ?, ?, ?, ?)", (member.guild.id, member.id, 0, 0, 0, "Joined", str(datetime.datetime.now(datetime.timezone.utc)))) #write into the table the data
+    except AttributeError:
+        pass
     if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id)).fetchone()) is None:
         cursor.execute("INSERT INTO membertable VALUES (?, ?, ?, ?, ?, ?, ?)", (0 , member.id, 0, 0, 0, "Joined", str(datetime.datetime.now(datetime.timezone.utc)))) #write into the table the data
     cursor.execute("CREATE TABLE IF NOT EXISTS memberlog (guildid INTEGER, memberid INTEGER, timestamp TEXT, status TEXT)")

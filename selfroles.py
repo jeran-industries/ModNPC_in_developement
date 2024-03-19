@@ -13,18 +13,20 @@ import sqlite3
 #own modules:
 from emoji2role import emoji2role
 from link2id import link2serverid, link2channelid, link2messageid
+from checks import check4dm
 
 async def create_selfrole(interaction, content, channeltopostin): #create a new reactionrole
-    filename = './database/database.db'
-    connection = sqlite3.connect(filename) #connect to polldatabase
-    cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER)")
-    embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
-    message = await channeltopostin.send(embed=embed)
-    cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?)", (interaction.guild.id, message.id)) #write into the table the data
-    await interaction.response.send_message("**Success** \nthe reactionrolesmessage was created.", ephemeral=True)
-    connection.commit()
-    connection.close()
+    if await check4dm(interaction) == False:
+        filename = './database/database.db'
+        connection = sqlite3.connect(filename) #connect to polldatabase
+        cursor = connection.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER)")
+        embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
+        message = await channeltopostin.send(embed=embed)
+        cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?)", (interaction.guild.id, message.id)) #write into the table the data
+        await interaction.response.send_message("**Success** \nthe reactionrolesmessage was created.", ephemeral=True)
+        connection.commit()
+        connection.close()
 
     #bot = ctx.bot
     #message_id = link2messageid(link)   #calls a module so a link become seperated to a message_id
@@ -66,7 +68,7 @@ async def create_selfrole(interaction, content, channeltopostin): #create a new 
     #        f.close()
 
 async def add_selfrole(interaction, bot, link, emoji, role, description):
-    if int(interaction.guild.id) == link2serverid(link):
+    if await check4dm(interaction) == False and int(interaction.guild.id) == link2serverid(link):
         if checkifroleexists(interaction.guild, role) == True:
             messageid = link2messageid(link)
             filename = './database/database.db'

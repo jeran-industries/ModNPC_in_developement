@@ -47,3 +47,6 @@ adding arenawar(being planned)
 adding minigame called koimerge(being planned)
     adding appversion of koimerge
 adding system for stats
+blacklisting discord invitelinks
+antiraid/nuke
+inviteroles

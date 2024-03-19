@@ -1,15 +1,19 @@
 import discord
 import sqlite3
 
+#own modules:
+from checks import check4dm
+
 
 async def setupcommand(interaction):
-    member = interaction.user
-    if member.guild_permissions.administrator:
-        embeddedsetup = discord.Embed(title=f'Setup:', description = f'Here you can setup ModNPC', color=discord.Color.green())
-        await interaction.response.send_message(embed = embeddedsetup, ephemeral = False, view = SelectStart())
-    else:
-        misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
-        await interaction.response.send_message(embed = misssuccessembed, ephemeral = False)
+    if await check4dm(interaction) == False:
+        member = interaction.user
+        if member.guild_permissions.administrator:
+            embeddedsetup = discord.Embed(title=f'Setup:', description = f'Here you can setup ModNPC', color=discord.Color.green())
+            await interaction.response.send_message(embed = embeddedsetup, ephemeral = False, view = SelectStart())
+        else:
+            misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
+            await interaction.response.send_message(embed = misssuccessembed, ephemeral = False)
 
 #startselectmenu:
 class SelectStart(discord.ui.View):
@@ -23,10 +27,11 @@ class SelectStart(discord.ui.View):
 class SelectStartMenu(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel'),
-            discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work'),
-            discord.SelectOption(label='Levelsystem', description='You can activate, deactivate the levelsystem, set the levelpingchannel, add and remove xp'),
-            discord.SelectOption(label='Welcomemessages', description='You can activate, deactivate, set the welcomemessages and the channel where the message will be sent'),
+            discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
+            discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work.'),
+            discord.SelectOption(label='Levelsystem', description='You can activate, deactivate the levelsystem, set the levelpingchannel, add and remove xp.'),
+            discord.SelectOption(label='Logging', description='You can activate, deactivate the logging and set the loggingchannel.'),
+            discord.SelectOption(label='Welcomemessages', description='You can activate, deactivate, set the welcomemessages and the channel where the message will be sent.'),
         ]
         super().__init__(placeholder="Choose what you want to change", options=options)
 
@@ -35,13 +40,17 @@ class SelectStartMenu(discord.ui.Select):
         print(result)
         if result == "Anonymous Messages":
             await anonymousmessagessetup(interaction)
+        elif result == "Custom VCs":
+            pass
         elif result == "Botupdates":
             await botupdatessetup(interaction)
         elif result == "Levelsystem":
             await levelsystemsetup(interaction)
+        elif result == "Logs":
+            await logsetup(interaction)
         elif result == "Welcomemessages":
             await welcomemessagessetup(interaction)
-        await interaction.response.send_message(content=f"You clicked on this option: {result}")
+        #await interaction.response.send_message(content=f"You clicked on this option: {result}")
 
 #Anonymous Messages:
 
@@ -319,6 +328,50 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"The levelingpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed)
+
+#Logs:
+async def logsetup(interaction: discord.Interaction):
+    member = interaction.user
+    await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True)
+
+class Testbutton(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Activate", custom_id="LogActivate")
+    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
+        #set logging status to true
+        #if logging channel isnt existent:
+            #send LogchannelSelectmenu
+        #else:
+            await interaction.response.send_message(f"You activated the logging")
+
+    @discord.ui.button(label="Activate", custom_id="LogActivate")
+    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
+        #set logging status to false
+        await interaction.response.send_message(f"You activated the logging")
+
+class LogChannelSelect(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(WelcomemessageChannelSelectMenu())
+        self.add_item(LogCreateButton())
+
+class LogChannelSelectMenu(discord.ui.ChannelSelect):
+    def __init__(self, custom_id = "ChannelSelectLog"):
+        super().__init__(placeholder="Choose the channel where the welcomemessage will be sent.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
+
+    async def callback(self, interaction: discord.Interaction):
+        #save channelid
+        pass
+
+class LogCreateButton(discord.ui.Button):
+    def __init__(self, custom_id = "ChannelCreateLog"):
+        super().__init__(label="Create the Channel")
+
+    async def callback(self, interaction: discord.Interaction):
+        #create channel and save channelid
+        pass
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

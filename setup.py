@@ -29,9 +29,9 @@ class SelectStartMenu(discord.ui.Select):
         options = [
             discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
             discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work.'),
-            discord.SelectOption(label='Levelsystem', description='You can activate, deactivate the levelsystem, set the levelpingchannel, add and remove xp.'),
-            discord.SelectOption(label='Logging', description='You can activate, deactivate the logging and set the loggingchannel.'),
-            discord.SelectOption(label='Welcomemessages', description='You can activate, deactivate, set the welcomemessages and the channel where the message will be sent.'),
+            discord.SelectOption(label='Levelsystem', description='You can (de)activate the levelsystem, set the levelpingchannel, add and remove xp.'),
+            discord.SelectOption(label='Logging', description='You can (de)activate the logging and set the loggingchannel.'),
+            discord.SelectOption(label='Welcomemessages', description='You can (de)activate, set the welcomemessages and the channel where the message will be sent.'),
         ]
         super().__init__(placeholder="Choose what you want to change", options=options)
 
@@ -162,7 +162,7 @@ class Buttons4LevelsystemSetup(discord.ui.View):
             await interaction.response.send_message(embed = embed, ephemeral=False)
         else:
             levelroleoptions = [item[0] for item in levelroleid]
-            print(levelroleoptions)
+            #print(levelroleoptions)
             guild = interaction.guild
             embed = discord.Embed(title=f'Remove a levelrole by selecting it in the dropdownmenu:', color=discord.Color.light_grey())
             #role = discord.utils.get(guild.roles, id=roleid)
@@ -269,8 +269,7 @@ class CreateLevelrole(discord.ui.View):
 
 class LevelRole2RemoveSelectMenu(discord.ui.Select):
     def __init__(self, levelroleoptions):
-        options = levelroleoptions
-        super().__init__(placeholder="Select the levelrole to remove it", options=options)
+        super().__init__(placeholder="Select the levelrole to remove it", options=levelroleoptions)
 
     async def callback(self, interaction: discord.Interaction):
         connection = sqlite3.connect("./database/database.db") #connect to polldatabase

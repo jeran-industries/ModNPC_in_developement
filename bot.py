@@ -15,7 +15,7 @@ import time
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
-from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles
+from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
 from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, setlevelpingchannelcommand, add_level_role_command, remove_level_role_command, claimcommand
 from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate
@@ -112,6 +112,14 @@ async def create_reactionrole(interaction:discord.Interaction, messagecontent: s
 @bot.tree.command(name='add_reactionrole')
 async def add_reactionrole(interaction:discord.Interaction, link: str, emoji: str, role: discord.Role, description: str = None): #create a new reactionrole
     await add_selfrole(interaction, bot, link, emoji, role, description)
+
+@bot.tree.command()
+async def create_reactionrole_dropmenu(interaction: discord.Interaction, messagecontent: str, channeltopostin: discord.TextChannel, role: discord.Role, description: str):
+    await create_selfrole_select_menu(interaction, messagecontent, channeltopostin, role=role, description=description)
+
+@bot.tree.command()
+async def add_reactionrole_dropmenu(interaction:discord.Interaction, link: str, role: discord.Role, description: str = None):
+    await add_selfrole_2_select_menu(interaction, bot, link, role, description)
 
 #@bot.help_command()
 #async def help(ctx):

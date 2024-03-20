@@ -9,6 +9,7 @@ import discord
 import json
 import os
 import sqlite3
+import aiosqlite
 
 #own modules:
 from emoji2role import emoji2role
@@ -23,8 +24,8 @@ async def create_selfrole(interaction, content, channeltopostin): #create a new 
         cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER)")
         embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
         message = await channeltopostin.send(embed=embed)
-        cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?)", (interaction.guild.id, message.id)) #write into the table the data
-        await interaction.response.send_message("**Success** \nthe reactionrolesmessage was created.", ephemeral=True)
+        cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?, ?)", (interaction.guild.id, message.id, False)) #write into the table the data
+        await interaction.response.send_message("**Success** \nThe reactionrolesmessage was created.", ephemeral=True)
         connection.commit()
         connection.close()
 
@@ -179,19 +180,25 @@ async def remove_selfrole_from_member(bot, payload):
     #    await member.remove_roles(role) #removing role from member
 
 #programmingphase:
-async def create_selfrole_select_menu(bot, link, channelid4menu, option1, option2):
-    message_id = link2messageid(link)   #calls a module so a link become seperated to a message_id
-    channel_id = int(link2channelid(link))   #calls a module so a link become seperated to a channel_id
-    server_id = link2serverid(link)     #calls a module so a link become seperated to a server_id
-    channel = await bot.fetch_channel(channel_id) #getting the channel from the message
-    message = await channel.get_partial_message(message_id).fetch() #getting the message to add a reaction so the user can more easy react
-    embed = discord.Embed(title="Get your selfroles with this menu", description = message.content, color=0x00ff00)
-    
-    list = [option1, option2]
-    menu = discord.SelectMenu(placeholder = "Select your selfrole!!!", options = list)
-    await channelid4menu.send(embed = embed)
+async def create_selfrole_select_menu(interaction, content, channeltopostin, role, description):
+    embed = discord.Embed(title="Get your selfroles with this menu:", description=content, color=0x00ff00)
+    message = await channeltopostin.send(embed=embed, view=SelfrolesSelect(role=role, description = description))
+    await interaction.response.send_message("**Success** \nThe reactionrolesmessage was created.", ephemeral=True)
 
-async def add_selfrole_2_select_menu(bot, link):
+class SelfrolesSelectMenu(discord.ui.Select):
+    def __init__(self, role, description):
+        super().__init__(placeholder="No selfrole yet", options=[discord.SelectOption(label=role.name, value=role.id, description = description)])
+
+    async def callback(self, interaction: discord.Interaction):
+        
+        await interaction.response.send_message(content=f"Sucessfully given you {self.values}")
+
+class SelfrolesSelect(discord.ui.View):
+    def __init__(self, role, description):
+        super().__init__()
+        self.add_item(SelfrolesSelectMenu(role = role, description = description))
+
+async def add_selfrole_2_select_menu(bot, link, role, description):
     message_id = link2messageid(link)   #calls a module so a link become seperated to a message_id
     channel_id = int(link2channelid(link))   #calls a module so a link become seperated to a channel_id
     server_id = link2serverid(link)     #calls a module so a link become seperated to a server_id

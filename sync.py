@@ -12,10 +12,12 @@ async def synccommand(ctx, bot, botlisttoken): #only 4 Member of developerteam
             await bot.tree.sync()
             newembed = discord.Embed(title=f'Syncing commands completed', description=f"Syncing commands completed, running command update on https://discordbotlist.com/bots/modnpc/commands", color=discord.Color.orange())
             await message.edit(embed = newembed)
+            newnewembed = discord.Embed(title=f'Command update completed', description=f"Check it out: https://discordbotlist.com/bots/modnpc/commands", color=discord.Color.orange())
+            await message.edit(embed = newnewembed)
             return()
     embed = discord.Embed(title=f'Attention', description=f"You aren't allowed to use this command!!!", color=discord.Color.dark_red())
     upload_commands(botlisttoken)
-    await ctx.reply(embed = embed)
+    await ctx.send(embed = embed)
 
 
 def upload_commands(bot_token):
@@ -87,4 +89,3 @@ def upload_commands(bot_token):
                     }           
                 ]
     response = requests.post(url, headers=headers, json=commands)
-    print(response.status_code)

@@ -13,6 +13,8 @@ def database_checking_and_creating(guildid):
         cursor.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, False, None, False, None, False, False, None)) #saving data
     try:
         cursor.execute("ALTER TABLE membertable ADD last_upvote INTEGER")
+        cursor.execute("ALTER TABLE selfrolesdata ADD dropdown BOOL")
+        cursor.execute("ALTER TABLE selfrolesdata ADD color BOOL")
     except:
         pass
 

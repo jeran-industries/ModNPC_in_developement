@@ -28,8 +28,8 @@ def upload_commands(bot_token):
     }
     commands =  [
                     {
-                        "name": "status",
-                        "description": "You can check the status of the bot out.",
+                        "name": "ping",
+                        "description": "You can ping the bot and get some interesting data back.",
                         "type": 1
                     },
                     {
@@ -52,16 +52,16 @@ def upload_commands(bot_token):
                         "description": "With this command you can append to a created reactionrole message new reactionroles.",
                         "type": 1
                     },
-                    {
-                        "name": "reactionrole_create_dropmenu",
-                        "description": "With this command you can create a message with a dropdownmenu to which you can append reactionroles.",
-                        "type": 1
-                    },
-                    {
-                        "name": "reactionrole_add_2_dropmenu",
-                        "description": "With this command you can append to a created dropdownmenu new reactionroles.",
-                        "type": 1
-                    },
+                    #{
+                    #    "name": "reactionrole_create_dropmenu",
+                    #    "description": "With this command you can create a message with a dropdownmenu to which you can append reactionroles.",
+                    #    "type": 1
+                    #},
+                    #{
+                    #    "name": "reactionrole_add_2_dropmenu",
+                    #    "description": "With this command you can append to a created dropdownmenu new reactionroles.",
+                    #    "type": 1
+                    #},
                     {
                         "name": "polls",
                         "description": "With this command you can create a poll.",
@@ -99,3 +99,9 @@ def upload_commands(bot_token):
                     }           
                 ]
     response = requests.post(url, headers=headers, json=commands)
+
+async def reconnectcommand(bot):
+    await bot.reconnect()
+
+async def disconnectcommand(bot):
+    await bot.disconnect()

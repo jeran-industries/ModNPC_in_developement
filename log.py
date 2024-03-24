@@ -136,19 +136,36 @@ def write_into_log(eventtype, memberid, guildid, channelid, messageid, content, 
 #voicechat
 async def voicechatupdate(bot, member, before, after): #nennt_mich_wie_ihr_wollt | <VoiceState self_mute=False self_deaf=False self_stream=False suppress=False requested_to_speak_at=None channel=<VoiceChannel id=1128824579398307923 name='Allgemein' rtc_region=None position=0 bitrate=64000 video_quality_mode=<VideoQualityMode.auto: 1> user_limit=0 category_id=1128824579398307920>> | <VoiceState self_mute=False self_deaf=False self_stream=False suppress=False requested_to_speak_at=None channel=None>    
     logchannel = await getlogchannel(bot, member.guild.id)
-    if logchannel is not None and before.channel.id == after.channel.id:
-        embed = discord.Embed(title = f"{member.display_name} just joined a voicechat.")
+    if logchannel is not None:
         try:
-            embed.add_field(name = f"Before: ({before.channel.jump_url})", value = f"name: {before.channel.name}\ntype: {before.channel.type}\nregion: {before.channel.rtc_region}\n", inline = True)
+            beforechannelid = before.channel.id
         except:
-            embed.add_field(name = f"Before: (No channel)", value = f"name: No channel\ntype: No channel\nregion: No channel\n", inline = True)
+            beforechannelid = None
+        try:
+            afterchannelid = after.channel.id
+        except:
+            afterchannelid = None
 
-        try:
-            embed.add_field(name = f"After: ({after.channel.jump_url})", value = f"name: {after.channel.name}\ntype: {after.channel.type}\nregion: {after.channel.rtc_region}\n", inline = True)
-        except:
-            embed.add_field(name = f"After: (No channel)", value = f"name: No channel\ntype: No channel\nregion: No channel\n", inline = True)
-            
-        await loginfosandsending(embed, member, bot, logchannel)
+        if beforechannelid != afterchannelid:
+            if afterchannelid != None and beforechannelid != None:
+                embed = discord.Embed(title = f"{member.display_name} just moved from {before.channel.jump_url} to {after.channel.jump_url}.")
+            elif afterchannelid != None:
+                embed = discord.Embed(title = f"{member.display_name} just joined {after.channel.jump_url}.")            
+            elif beforechannelid != None:
+                embed = discord.Embed(title = f"{member.display_name} just left {before.channel.jump_url}.")            
+            await loginfosandsending(embed, member, bot, logchannel)
+        
+        #if beforechannelid != afterchannelid:
+        #    embed = discord.Embed(title = f"{member.display_name} just joined a voicechat.")
+        #    try:
+        #        embed.add_field(name = f"Before: ({before.channel.jump_url})", value = f"name: {before.channel.name}\ntype: {before.channel.type}\nregion: {before.channel.rtc_region}\n", inline = True)
+        #    except:
+        #        embed.add_field(name = f"Before: (No channel)", value = f"name: No channel\ntype: No channel\nregion: No channel\n", inline = True)
+        #    try:
+        #        embed.add_field(name = f"After: ({after.channel.jump_url})", value = f"name: {after.channel.name}\ntype: {after.channel.type}\nregion: {after.channel.rtc_region}\n", inline = True)
+        #    except:
+        #        embed.add_field(name = f"After: (No channel)", value = f"name: No channel\ntype: No channel\nregion: No channel\n", inline = True)   
+        #    await loginfosandsending(embed, member, bot, logchannel)
 
 #member
 async def memberjoin(bot, member):

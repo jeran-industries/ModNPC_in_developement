@@ -25,7 +25,7 @@ from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
 from help import answer4help, answer4help4mods, helpwithsetup
 from botupdates import publishbotupdatescommand#, setbotupdateschannelcommand
-from sync import synccommand
+from sync import synccommand, reconnectcommand, disconnectcommand
 from anonymousmessage import sendanonymousmessagecommand
 from setup import setupcommand
 from presence import presenceupdate
@@ -42,6 +42,7 @@ CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
 
 bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
+
 #tracemalloc.start()
 handler = logging.FileHandler(filename='./database/discord.log', encoding='utf-8')
 sys.path.append('.')
@@ -57,11 +58,14 @@ async def on_member_join(member):
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
+    #print("One minute loop is running")
     await new_minute_in_vc(bot)
 
 @tasks.loop(minutes=10)
 async def ten_minute_loop():
-    await presenceupdate(bot)
+    #print("Ten minute loop is running")
+    await bot.change_presence(status=discord.Status.online, activity = discord.Game(f"Watching {bot.guilds} servers with {bot.users} members"))
+    #await presenceupdate(bot)
     await check4upvotebotlist(bot, BOTLISTTOKEN)
 
 @bot.event
@@ -240,6 +244,14 @@ async def testwelcomemessage(interaction: discord.Interaction, member: discord.M
 async def sync(ctx):
     await synccommand(ctx, bot, BOTLISTTOKEN)
 
+@bot.command()
+async def reconnect(ctx):
+    await reconnectcommand(bot)
+
+@bot.command()
+async def disconnect(ctx):
+    await disconnectcommand(bot)
+
 @bot.event
 async def on_raw_reaction_add(payload): #reactionadded trigger
     #await new_reaction_4_log(payload, bot)
@@ -288,14 +300,19 @@ async def on_ready():
     elif bot.user.id == 1183880930201448469: #betabot
         await beta_message_back_online(bot)
 
-class MyBot(commands.Bot):
-    async def setup_hook(self):
-
-        print(f"Logged in as: {self.user}")
-        await selfrolesaddview(self.user)
-        await one_minute_loop.start()
-        await ten_minute_loop.start()
-
+@bot.event
+async def on_connect():    
+    one_minute_loop.start()
+    ten_minute_loop.start()
+#    print(f"Logged in as: {bot.user}")
+#    #await selfrolesaddview(user)
+#    one_minute_loop.start()
+#    ten_minute_loop.start()
+    
+@bot.event
+async def on_disconnect():
+    one_minute_loop.stop()
+    ten_minute_loop.stop()
 
 #Do u want to debug?
 debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")

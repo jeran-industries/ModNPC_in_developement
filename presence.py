@@ -7,4 +7,4 @@ async def presenceupdate(bot):
     guildcounter = len(cursor.execute("SELECT * FROM guildsetup").fetchall())
     membercounter = len(cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND status = ?", (0, "Joined")).fetchall())
     connection.close()
-    await bot.change_presence(status=discord.Status.online, activity = discord.Game(f"Koimerge and watching {guildcounter} servers with {membercounter} members"))
+    await bot.change_presence(status=discord.Status.online, activity = discord.Game(f"Watching {guildcounter} servers with {membercounter} members"))

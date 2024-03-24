@@ -1,5 +1,6 @@
 import discord
 import sqlite3
+import aiosqlite
 
 #own modules:
 from checks import check4dm
@@ -14,6 +15,8 @@ async def setupcommand(interaction):
         else:
             misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
             await interaction.response.send_message(embed = misssuccessembed, ephemeral = False)
+    else:
+        await interaction.response.send_message("**ERROR** \nYou cant use this command outside of servers.", ephemeral=True)
 
 #startselectmenu:
 class SelectStart(discord.ui.View):
@@ -333,22 +336,36 @@ async def logsetup(interaction: discord.Interaction):
     member = interaction.user
     await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True)
 
-class Testbutton(discord.ui.View):
+class LogSetupView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Activate", custom_id="LogActivate")
     async def test(self, interaction: discord.Interaction, button: discord.ui.button):
-        #set logging status to true
-        #if logging channel isnt existent:
-            #send LogchannelSelectmenu
-        #else:
-            await interaction.response.send_message(f"You activated the logging")
+        connection = await aiosqlite.connect("./database/database.db")
+        guildid = interaction.guild.id
+        logchannelidcursor = await connection.execute('SELECT logchannelid FROM guildsetup WHERE guildid = ?', (guildid,))
+        logchannelid = await logchannelidcursor.fetchone()
+        logchannelid = logchannelid[0]
+        await connection.close()
+        await logchannelidcursor.close()
+        if logchannelid is not None:
+            await interaction.response.send_message(f"Logging is already activated by setting the logging channel.", ephemeral = True)
+        else:
+            await interaction.response.send_message(f"Use first this command to set the logging channel: `/logchannel`", ephemeral = True)        
 
-    @discord.ui.button(label="Activate", custom_id="LogActivate")
+    @discord.ui.button(label="Deactivate", custom_id="Logdeactivate")
     async def test(self, interaction: discord.Interaction, button: discord.ui.button):
-        #set logging status to false
-        await interaction.response.send_message(f"You activated the logging")
+        connection = await aiosqlite.connect("./database/database.db")
+        guildid = interaction.guild.id
+        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (0, guildid))
+        await connection.commit()
+        await connection.close()
+        await interaction.response.send_message(f"You deactivated the logging", ephemeral = True)
+
+    @discord.ui.button(label="Set the logchannel", custom_id="LogChannelSet")
+    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Use this command to set the logging channel: `/log_set_channel`", ephemeral = True)  
 
 class LogChannelSelect(discord.ui.View):
     def __init__(self):

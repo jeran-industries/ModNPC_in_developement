@@ -11,12 +11,33 @@ def database_checking_and_creating(guildid):
     cursor.execute("CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
     if (cursor.execute("SELECT * FROM guildsetup WHERE guildid = ?", (guildid,)).fetchone()) is None:
         cursor.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, False, None, False, None, False, False, None)) #saving data
+
     try:
-        cursor.execute("ALTER TABLE membertable ADD last_upvote INTEGER")
-        cursor.execute("ALTER TABLE selfrolesdata ADD dropdown BOOL")
-        cursor.execute("ALTER TABLE selfrolesdata ADD color BOOL")
+        cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
     except:
         pass
+
+    try:
+        cursor.execute("ALTER TABLE membertable ADD last_upvote INTEGER")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE selfrolesdata ADD dropdown BOOL")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE selfrolesdata ADD color str")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE selfroleoptions ADD description str")
+    except:
+        pass
+
+
 
     connection.commit()
     connection.close()

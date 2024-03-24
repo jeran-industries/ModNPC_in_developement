@@ -20,24 +20,18 @@ completed:
 0.10: adding botupdatechannel and setupcommand
 0.11: adding v3 of levelingsystem
     0.11.1: adding custom levelroles(Being tested)
+0.12: adding logs
 
 
 in progress:
-adding logs based on sqlite(in progress)
-    adding messagelogs
-        log if message is sent(completed)
-        log if message is edited(in progress)
-        log if message is deleted(in progress)
-    adding reactionlogs
+adding errorhandling
 adding custom welcomemessages(being tested)
 adding anonymous messages(in progress)
 adding a button to list all levelroles
 
 in future:
-adding errorhandling
 adding v4 of pollsystem: expanding by adding buttons
 adding v3 of selfrolessystem
-    changing database from json to sqlite
     adding buttons to selfrolessystem
     adding dropmenu
 adding customvcs

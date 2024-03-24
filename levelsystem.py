@@ -228,7 +228,7 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
                 await member.add_roles(role)
                 oldroles = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ? AND level < ? AND keeprole = 0", (guildid, newlevel)).fetchall()
                 if oldroles is not None:
-                    member.remove_roles(oldroles)
+                    await member.remove_roles(oldroles)
                 embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel} and got the role `{role.name}`.', color=discord.Color.green())
             else:
                 embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel}.', color=discord.Color.green())
@@ -249,7 +249,7 @@ async def getlevelrole(bot, memberid, guildid, level):
         await member.add_roles(role)
         roles = cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level < ? AND keepit = 0", (guildid, level)).fetchall()
         if roles != None:
-            member.remove_roles(roles)
+            await member.remove_roles(roles)
         return(role)
     else:
         return(None)

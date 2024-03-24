@@ -12,13 +12,14 @@ import tracemalloc
 import sys
 import logging
 import time
+import math
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
-from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu
+from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu, selfrolesaddview
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
 from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, setlevelpingchannelcommand, add_level_role_command, remove_level_role_command, claimcommand
-from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate
+from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate, memberjoin, memberleave, memberupdate, memberban, memberunban, setlogchannelcommand, invitecreate, invitedelete
 from membermanagement import new_member
 from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
@@ -67,25 +68,56 @@ async def ten_minute_loop():
 async def on_message(message):
     await bot.process_commands(message) 
     #print(message)
-    await messagesenteventlog(message) #messagelog
-    await new_message(bot, message) #levelingsystem  
-    
-@bot.event
-async def on_message_edit(before, after):
-    messageeditedeventlog(after)
+    await messagesenteventlog(bot, message) #messagelog
+    await new_message(bot, message) #levelingsystem
 
 @bot.event
-async def on_message_deleted(message):
-    messagedeletedeventlog(message)
+async def on_message_edit(before, after):
+    await messageeditedeventlog(bot, before, after)
+
+@bot.event
+async def on_message_delete(message):
+    await messagedeletedeventlog(bot, message)
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    await voicechatupdate(member, after, before)
+    await voicechatupdate(bot, member, before, after)
+
+@bot.event
+async def on_member_join(member):
+    await memberjoin(bot, member)
+
+@bot.event
+async def on_raw_member_remove(payload):
+    await memberleave(bot, payload)
+
+#@bot.event
+#async def on_member_update(before, after):
+#    await memberupdate(bot, before, after)
+
+@bot.event
+async def on_member_ban(guild, user):
+    await memberban(bot, guild, user)
+
+@bot.event
+async def on_member_unban(guild, user):
+    await memberunban(bot, guild, user)
+
+@bot.event
+async def on_invite_create(invite):
+    await invitecreate(bot, invite)
+
+@bot.event
+async def on_invite_delete(invite):
+    await invitedelete(bot, invite)
 
 #Simpletestcommand    
-@bot.command()
-async def status(ctx):
-    await ctx.reply('Hi, im here online')
+@bot.tree.command()
+async def ping(interaction: discord.Interaction):
+    embed = discord.Embed(title = "Pong")
+    embed.add_field(name = f"Latency:", value = f"{math.floor(bot.latency * 1000)} ms", inline = False)
+    embed.add_field(name = f"Users:", value = f"{len(bot.users)}", inline = False)
+    await interaction.response.send_message(embed = embed)
 
 #@bot.command()
 #async def Ineedhelp(ctx):
@@ -98,28 +130,33 @@ async def status(ctx):
 #@bot.command()
 #async def Ineedhelpwithsetup(ctx):
 #    await helpwithsetup(ctx)
-
+    
+#setup:
 @bot.tree.command()
 async def setup(interaction:discord.Interaction):   
     await setupcommand(interaction)
 
+@bot.tree.command()
+async def log_set_channel(interaction: discord.Interaction, channel: discord.TextChannel):
+    await setlogchannelcommand(interaction, channel)
+
 #Selfroles:
 #v1: selfroles with reactions
 @bot.tree.command(name='create_reactionrole')
-async def create_reactionrole(interaction:discord.Interaction, messagecontent: str, channeltopostin: discord.TextChannel): #create a new reactionrole
+async def reactionrole_create(interaction:discord.Interaction, messagecontent: str, channeltopostin: discord.TextChannel): #create a new reactionrole
     await create_selfrole(interaction, messagecontent, channeltopostin)
 
 @bot.tree.command(name='add_reactionrole')
-async def add_reactionrole(interaction:discord.Interaction, link: str, emoji: str, role: discord.Role, description: str = None): #create a new reactionrole
+async def reactionrole_add(interaction:discord.Interaction, link: str, emoji: str, role: discord.Role, description: str = None): #create a new reactionrole
     await add_selfrole(interaction, bot, link, emoji, role, description)
 
-@bot.tree.command()
-async def create_reactionrole_dropmenu(interaction: discord.Interaction, messagecontent: str, channeltopostin: discord.TextChannel, role: discord.Role, description: str):
-    await create_selfrole_select_menu(interaction, messagecontent, channeltopostin, role=role, description=description)
+#@bot.tree.command()
+#async def reactionrole_create_dropmenu(interaction: discord.Interaction, messagecontent: str, channeltopostin: discord.TextChannel, emoji: str, role: discord.Role, description: str):
+#    await create_selfrole_select_menu(bot, interaction, messagecontent, channeltopostin, emoji=emoji, role=role, description=description)
 
-@bot.tree.command()
-async def add_reactionrole_dropmenu(interaction:discord.Interaction, link: str, role: discord.Role, description: str = None):
-    await add_selfrole_2_select_menu(interaction, bot, link, role, description)
+#@bot.tree.command()
+#async def reactionrole_add_2_dropmenu(interaction:discord.Interaction, link: str, emoji: str, role: discord.Role, description: str = None):
+#    await add_selfrole_2_select_menu(interaction, bot, link, emoji, role, description)
 
 #@bot.help_command()
 #async def help(ctx):
@@ -246,12 +283,19 @@ async def on_ready():
             membercounter = membercounter + 1
             print(member)
     #print(f"These are all appcommands: \n{await bot.tree.sync()}")
-    one_minute_loop.start()
-    ten_minute_loop.start()
     if bot.user.id == 1144006301765095484: #betabot
         await message_back_online(bot)
     elif bot.user.id == 1183880930201448469: #betabot
         await beta_message_back_online(bot)
+
+class MyBot(commands.Bot):
+    async def setup_hook(self):
+
+        print(f"Logged in as: {self.user}")
+        await selfrolesaddview(self.user)
+        await one_minute_loop.start()
+        await ten_minute_loop.start()
+
 
 #Do u want to debug?
 debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
@@ -259,3 +303,5 @@ if debug == "debug":
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
 else:
     bot.run(TOKEN, log_handler=handler)
+
+#runs after bot is out

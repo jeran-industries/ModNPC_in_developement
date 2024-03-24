@@ -43,13 +43,23 @@ def upload_commands(bot_token):
                         "type": 1
                     },
                     {
-                        "name": "create_reactionrole",
+                        "name": "reactionrole_create",
                         "description": "With this command you can create a message to which you can append reactionroles.",
                         "type": 1
                     },
                     {
-                        "name": "add_reactionrole",
+                        "name": "reactionrole_add",
                         "description": "With this command you can append to a created reactionrole message new reactionroles.",
+                        "type": 1
+                    },
+                    {
+                        "name": "reactionrole_create_dropmenu",
+                        "description": "With this command you can create a message with a dropdownmenu to which you can append reactionroles.",
+                        "type": 1
+                    },
+                    {
+                        "name": "reactionrole_add_2_dropmenu",
+                        "description": "With this command you can append to a created dropdownmenu new reactionroles.",
                         "type": 1
                     },
                     {

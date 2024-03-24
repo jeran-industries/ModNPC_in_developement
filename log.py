@@ -150,9 +150,9 @@ async def voicechatupdate(bot, member, before, after): #nennt_mich_wie_ihr_wollt
             if afterchannelid != None and beforechannelid != None:
                 embed = discord.Embed(title = f"{member.display_name} just moved from {before.channel.jump_url} to {after.channel.jump_url}.")
             elif afterchannelid != None:
-                embed = discord.Embed(title = f"{member.display_name} just joined {after.channel.jump_url}.")            
+                embed = discord.Embed(title = f"{member.display_name} just joined {after.channel.jump_url}.")
             elif beforechannelid != None:
-                embed = discord.Embed(title = f"{member.display_name} just left {before.channel.jump_url}.")            
+                embed = discord.Embed(title = f"{member.display_name} just left {before.channel.jump_url}.")
             await loginfosandsending(embed, member, bot, logchannel)
         
         #if beforechannelid != afterchannelid:

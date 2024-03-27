@@ -13,6 +13,7 @@ import sys
 import logging
 import time
 import math
+import aiohttp
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -251,6 +252,26 @@ async def reconnect(ctx):
 @bot.command()
 async def disconnect(ctx):
     await disconnectcommand(bot)
+
+@bot.command()
+async def list(ctx):
+    channel = ctx.channel
+    list = await channel.webhooks()
+    if list is None:
+        list = await channel.create_webhook(name= "test", reason = "test")
+
+    await ctx.reply(list)
+
+@bot.tree.command()
+async def send_webhook(interaction: discord.Interaction, channel: discord.TextChannel):
+    async with aiohttp.ClientSession() as session:
+        print(await discord.webhooks())
+
+        e = discord.Embed(title="Title", description="Description")
+        e.add_field(name="Field 1", value="Value 1")
+        e.add_field(name="Field 2", value="Value 2")
+
+        await webhook.send(embed=e)
 
 @bot.event
 async def on_raw_reaction_add(payload): #reactionadded trigger

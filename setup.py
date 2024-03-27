@@ -11,10 +11,10 @@ async def setupcommand(interaction):
         member = interaction.user
         if member.guild_permissions.administrator:
             embeddedsetup = discord.Embed(title=f'Setup:', description = f'Here you can setup ModNPC', color=discord.Color.green())
-            await interaction.response.send_message(embed = embeddedsetup, ephemeral = False, view = SelectStart())
+            await interaction.response.send_message(embed = embeddedsetup, ephemeral = True, view = SelectStart())
         else:
             misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
-            await interaction.response.send_message(embed = misssuccessembed, ephemeral = False)
+            await interaction.response.send_message(embed = misssuccessembed, ephemeral = True)
     else:
         await interaction.response.send_message("**ERROR** \nYou cant use this command outside of servers.", ephemeral=True)
 
@@ -59,7 +59,7 @@ class SelectStartMenu(discord.ui.Select):
 
 async def anonymousmessagessetup(interaction):
     member = interaction.user
-    await interaction.response.send_message("This part isnt programmed yet", ephemeral = False)
+    await interaction.response.send_message("This part isnt programmed yet", ephemeral = True)
     #if member.guild_permissions.administrator:
         #filename = "./database/database"
         #connection = sqlite3.connect(filename)
@@ -84,7 +84,7 @@ class SelectAnonymousMessage(discord.ui.View):
 
 async def botupdatessetup(interaction):
     embeddedsetupbotupdates = discord.Embed(title=f'Botupdates Setup:', description = f'Here you can set the botupdatechannel of ModNPC', color=discord.Color.green())
-    await interaction.response.send_message(embed = embeddedsetupbotupdates, ephemeral = False, view = ViewBotupdateSetup())
+    await interaction.response.send_message(embed = embeddedsetupbotupdates, ephemeral = True, view = ViewBotupdateSetup())
     #file_name = "./database/database.db"
     #connection = sqlite3.connect(file_name) #connect to polldatabase
     #cursor = connection.cursor()
@@ -99,16 +99,21 @@ class ViewBotupdateSetup(discord.ui.View):
 
 class ChannelSelectBotupdateSetup(discord.ui.ChannelSelect):
     def __init__(self, custom_id = "channelselectbotupdatesetup"):
-        super().__init__(placeholder="Choose the channel where the botupdates will be send.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
+        super().__init__(placeholder="Choose the channel where the botupdates will be send.", channel_types=[discord.ChannelType.text])
 
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
+        channel = await channel.fetch() #converts APPCOMMANDCHANNEL to GUILDCHANNEL
+        bot = interaction.client
         guild = interaction.guild
+        newschannelid = 1191732882092339270
+        newschannel = await bot.fetch_channel(newschannelid)
+        await newschannel.follow(destination = channel)
         file_name = "./database/database.db"
         connection = sqlite3.connect(file_name) #connect to polldatabase
         cursor = connection.cursor()
-        cursor.execute("UPDATE guildsetup set botupdatestatus = ? WHERE guildid = ?", (True, guild.id))
-        cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, guild.id))
+        cursor.execute("UPDATE guildsetup set botupdatestatus = ? WHERE guildid = ?", (True, interaction.guild.id))
+        cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, interaction.guild.id))
         connection.commit()
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green())

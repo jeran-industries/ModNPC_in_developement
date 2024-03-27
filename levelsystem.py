@@ -46,7 +46,7 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
     if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id)).fetchone()) is not None: 
         if AttributeError:
             pass
-        if guildid == 0:
+        if guildid != 0:
             cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
             messagessentguild = next(cursor, [None])[0]
             cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))

@@ -93,7 +93,7 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
                         embed.add_field(name = f"{emoji} || {role}", value = description, inline = False) #adds a new field to the embedded message for each option
                     await message.edit(embed=embed) #sending all the fields
                     await message.add_reaction(emoji) #adding the reaction to message
-                    cursor.execute("INSERT INTO selfroleoptions VALUES (?, ?, ?)", (messageid, emoji, role.id)) #write into the table the data
+                    cursor.execute("INSERT INTO selfroleoptions VALUES (?, ?, ?, ?)", (messageid, emoji, role.id, description)) #write into the table the data
                 else:
                     await interaction.response.send_message("This reactionrole was already added.", ephemeral=True)
             else:

@@ -70,10 +70,10 @@ async def messagesenteventlog(bot, message):
 async def messageeditedeventlog(bot, before, after):
     eventtype = "edited"
     logchannel = await getlogchannel(bot, after.guild.id)
-    if logchannel is not None:
+    if logchannel is not None and before is not None and after is not None:
         embed = discord.Embed(title = f"{after.author.display_name} ({after.author.id}) just edited the message: {after.jump_url}.")
-        embed.add_field(name = f"Before: ({before.created_at})", value = before.content, inline = True)
-        embed.add_field(name = f"After: ({after.edited_at})", value = after.content, inline = True)
+        embed.add_field(name = f"Before: ({before.created_at})", value = f"{before.content}\n\n{before.embeds}", inline = True)
+        embed.add_field(name = f"After: ({after.edited_at})", value = f"{after.content}\n\n{after.embeds}", inline = True)
         await loginfosandsending(embed, after.author, bot, logchannel)
     #v2:
     #write_into_log(eventtype, message.author.id, message.guild.id, message.channel.id, message.id, message.content, str(message.edited_at))
@@ -83,7 +83,7 @@ async def messagedeletedeventlog(bot, message):
     logchannel = await getlogchannel(bot, message.guild.id)
     if logchannel is not None:
         embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")
-        embed.add_field(name = f"Content: ({message.created_at})", value = message.content, inline = True)
+        embed.add_field(name = f"Content: ({message.created_at})", value = f"{message.content}\n\n{message.embeds}", inline = True)
         await loginfosandsending(embed, message.author, bot, logchannel)
     #v1:
     #file_name = "./Logs/Messages/V1/" + str(message.guild.id) + '/' + str(message.channel.id) + ".json"
@@ -259,7 +259,8 @@ async def loginfosandsending(embed, member, bot, logchannel):
     except:
         pass
     embed.set_footer(text=f"{bot.user.name} | {datetime.utcnow()}")
-    await logchannel.send(embed = embed)
+    if bot.user.id != member.id:
+        await logchannel.send(embed = embed)
 
 async def getlogchannel(bot, guildid):
     connection = await aiosqlite.connect("./database/database.db")

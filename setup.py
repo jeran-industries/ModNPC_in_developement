@@ -1,6 +1,7 @@
 import discord
 import sqlite3
 import aiosqlite
+import asyncio
 
 #own modules:
 from checks import check4dm
@@ -31,7 +32,9 @@ class SelectStartMenu(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
+            discord.SelectOption(label='Autoroles', description='Here you can add and remove autoroles.'),
             discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work.'),
+            discord.SelectOption(label='Custom VCs', description='You can activate and deactivate custom voicechats.'),
             discord.SelectOption(label='Levelsystem', description='You can (de)activate the levelsystem, set the levelpingchannel, add and remove xp.'),
             discord.SelectOption(label='Logging', description='You can (de)activate the logging and set the loggingchannel.'),
             discord.SelectOption(label='Welcomemessages', description='You can (de)activate, set the welcomemessages and the channel where the message will be sent.'),
@@ -40,20 +43,184 @@ class SelectStartMenu(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         result = self.values[0]
-        print(result)
+        #print(result)
         if result == "Anonymous Messages":
             await anonymousmessagessetup(interaction)
-        elif result == "Custom VCs":
-            pass
+        elif result == "Autoroles":
+            await autorolessetup(interaction)
         elif result == "Botupdates":
             await botupdatessetup(interaction)
+        elif result == "Custom VCs":
+            await customvcsetup(interaction)
         elif result == "Levelsystem":
             await levelsystemsetup(interaction)
-        elif result == "Logs":
+        elif result == "Logging":
             await logsetup(interaction)
         elif result == "Welcomemessages":
             await welcomemessagessetup(interaction)
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
+
+#Autoroles:
+async def autorolessetup(interaction):
+    
+    #return()
+
+    member = interaction.user
+    
+    #print(labellist)
+
+    await interaction.response.send_message("This part isnt programmed yet", ephemeral = True, view = ViewAutoRoleSetup())
+
+class ViewAutoRoleSetup(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        #self.add_item(Autorolelist(labellist = labellist))
+
+    @discord.ui.button(label="Add Autorole", custom_id="addautorolebutton")
+    async def addautorole(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(view = ViewAutoRoleAddSetup(), ephemeral = True)
+
+    @discord.ui.button(label="Remove Autorole", custom_id="removeautorolebutton", disabled = True)
+    async def emoveautorole(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(view = ViewAutoRoleRemoveSetup())
+
+    @discord.ui.button(label="Reset Autoroles", custom_id="resetautorolebutton")
+    async def resetautoroles(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        if interaction.user.id == guild.owner.id:
+            connection = await aiosqlite.connect("./database/database.db")
+            connection.execute("DELETE FROM autorole WHERE guildid = ?", (guild.id))
+            logchannelid = logchannelid[0]
+            await connection.close()
+            await interaction.response.send_message(f"All autoroles are deleted.", ephemeral = True)
+        else:
+            await interaction.response.send_message(f"You arent the owner of the server and cant reset it.", ephemeral = True)
+
+    @discord.ui.button(label="List Autoroles", custom_id="listautorolesbutton")
+    async def listautoroles(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        connection = await aiosqlite.connect("./database/database.db") #connect to polldatabase
+        levelroleidcursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (interaction.guild.id, 0))
+        levelroleids = await levelroleidcursor.fetchall()
+        await levelroleidcursor.close()
+        membergroupcursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (interaction.guild.id, 0))
+        membergroups = await membergroupcursor.fetchall()
+        await membergroupcursor.close()
+        #print(levelroleid)
+        await connection.close()
+        try:
+            levelroleids[0]
+            for levelroleid, membergroup in levelroleids, membergroups:
+                role = guild.get_role(levelroleid) 
+                if membergroup == 0:
+                    embed.add_field(name=role.name, value = f"Usergroup: All user")
+                if membergroup == 1:
+                    embed.add_field(name=role.name, value = f"Usergroup: Botuser")
+                if membergroup == 2:
+                    embed.add_field(name=role.name, value = f"Usergroup: Human user")
+        except:
+            embed = discord.Embed(title=f'You dont have any autorole yet.', color=discord.Color.light_grey())
+        
+        await interaction.response.send_message(embed = embed, ephemeral=True)
+            
+
+class ViewAutoRoleAddSetup(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(RoleSelectAutoRoleAddSetup())
+
+class RoleSelectAutoRoleAddSetup(discord.ui.RoleSelect):
+    def __init__(self):
+        super().__init__(placeholder="Choose the new role for your autorole.")
+
+    async def callback(self, interaction: discord.Interaction):
+        role = self.values[0]
+        if role.is_assignable():
+            await interaction.response.send_message(f"Who should be affected?", ephemeral = True, view = ViewAutoRoleUserGroupSetup(role=role))      
+        else:
+            message = await interaction.response.send_message(f"The role can't be assigned by the bot because the role is above the highest role of the bot.", ephemeral = True)
+            await asyncio.sleep(5)
+            await message.delete()
+
+class ViewAutoRoleUserGroupSetup(discord.ui.View):
+    def __init__(self, role):
+        super().__init__(timeout=None)
+        self.add_item(SelectAutoRoleUserGroupSetup(role=role))
+
+class SelectAutoRoleUserGroupSetup(discord.ui.Select):
+    def __init__(self, role):
+        self.role = role
+        options = [
+            discord.SelectOption(label='All users', description='All user: Bots and humans', emoji='👤'),
+            discord.SelectOption(label='Bots', description='Only Bots', emoji='🤖'),
+            discord.SelectOption(label='Humans', description='Only Humans', emoji='🧑'),
+        ]
+        super().__init__(placeholder="Choose the group the role will be assigned to on joinup.", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        option=self.values[0]
+        role = self.role
+        guild = interaction.guild
+        #all(0) usergroups: bot(1) and humanusers(2)
+        connection = await aiosqlite.connect("./database/database.db")
+        roleidsalluserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 0))
+        roleidsallusers = await roleidsalluserscursor.fetchone()
+        await roleidsalluserscursor.close()
+
+        roleidsbotuserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 1))
+        roleidsallbotusers = await roleidsbotuserscursor.fetchone()
+        await roleidsbotuserscursor.close()
+
+        roleidsallhumanuserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 2))
+        roleidsallhumanusers = await roleidsallhumanuserscursor.fetchone()
+        await roleidsallhumanuserscursor.close()
+
+        if roleidsallusers is not None and option == "Bots": #if there is already a autorole and selected option is bots
+            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (1, role.id))
+            #await interaction.followup(f"You updated {self.role.name} and updated the assignement of the autorole from all users to only bots", ephemeral = True)
+            embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and updated the assignement of the autorole from all users to only bot users", color=discord.Color.green())
+        
+        elif roleidsallusers is not None and option == "Humans": #if there is already a autorole and selected option is humans
+            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (2, role.id))
+            embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and updated the assignement of the autorole from all users to only human users", color=discord.Color.green())
+                
+        elif roleidsallbotusers is not None and option != "Bots": #if there is already a autorole and selected option is human or all users
+            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (0, role.id))
+            embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and set the assignement autorole from only botusers to be added to all users", color=discord.Color.green())
+
+        elif roleidsallhumanusers is not None and option != "Humans": #if there is already a autorole and selected option is human or all users
+            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (0, role.id))
+            embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and set the assignement autorole from only human users to be added to all users", color=discord.Color.green())
+        
+        else:
+            if option == "All users" and roleidsallusers is None:
+                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 0)") #write into the table the data")
+                embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all users", color=discord.Color.green())
+            elif option == "Bots" and roleidsallbotusers is None:
+                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 1)") #write into the table the data")
+                embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all bot users", color=discord.Color.green())
+            elif option == "Humans" and roleidsallhumanusers is None:
+                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 2)") #write into the table the data")
+                embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all human users", color=discord.Color.green())
+            else:
+                embed = discord.Embed(title=f'ERROR', description = f'This autorole is already created', color=discord.Color.red())
+
+        await interaction.response.send_message(embed = embed, ephemeral = True)
+        await connection.commit()
+        await connection.close()
+
+class ViewAutoRoleRemoveSetup(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(RoleSelectAutoRoleRemoveSetup())
+
+class RoleSelectAutoRoleRemoveSetup(discord.ui.RoleSelect):
+    def __init__(self, custom_id = "roleselectautoroleremovesetup"):
+        super().__init__(placeholder="Choose the autorole you want to remove.")
+
+    async def callback(self, interaction: discord.Interaction):
+        pass
 
 #Anonymous Messages:
 
@@ -116,14 +283,19 @@ class ChannelSelectBotupdateSetup(discord.ui.ChannelSelect):
         cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, interaction.guild.id))
         connection.commit()
         connection.close()
-        embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green(), ephemeral = True)
         await interaction.response.send_message(embed = embed)
+
+#Custom VCs:
+async def customvcsetup(interaction):
+    member = interaction.user
+    await interaction.response.send_message("This part isnt programmed yet", ephemeral = True)
 
 #Levelsystem:
 
 async def levelsystemsetup(interaction):
     embeddedsetuplevelsystem = discord.Embed(title=f'Levelsystem Setup:', description = f'Here you activate, deactivate, reset and set the levelping', color=discord.Color.green())
-    await interaction.response.send_message(embed = embeddedsetuplevelsystem, ephemeral = False, view = Buttons4LevelsystemSetup())
+    await interaction.response.send_message(embed = embeddedsetuplevelsystem, ephemeral = True, view = Buttons4LevelsystemSetup())
 
 class Buttons4LevelsystemSetup(discord.ui.View):
     def __init__(self):
@@ -139,7 +311,7 @@ class Buttons4LevelsystemSetup(discord.ui.View):
         connection.commit()
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"You activated the levelsystem commands.", color=discord.Color.green())
-        await interaction.response.send_message(embed = embed, ephemeral=False)
+        await interaction.response.send_message(embed = embed, ephemeral = True)
     
     @discord.ui.button(label="Deactivate", custom_id="LevelsystemSetupDeactivate", style=discord.ButtonStyle.red)
     async def levelsystemsetupdeactivate(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -151,23 +323,23 @@ class Buttons4LevelsystemSetup(discord.ui.View):
         connection.commit()
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"You deactivated the levelsystem commands.", color=discord.Color.red())
-        await interaction.response.send_message(embed = embed, ephemeral=False)
+        await interaction.response.send_message(embed = embed, ephemeral=True)
     
     @discord.ui.button(label="Add a levelrole", custom_id="AddALevelroleSetup", style=discord.ButtonStyle.grey)
     async def addalevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(title=f'Add a new levelrole by setting the right level, the roleid and if it should be removed as soon you reach a new level:', color=discord.Color.light_grey())
-        await interaction.response.send_message(embed = embed, ephemeral=False, view=LevelroleSelect())
+        await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelroleSelect())
 
     @discord.ui.button(label="Remove a levelrole", custom_id="RemoveALevelroleSetup", style=discord.ButtonStyle.grey)
     async def removealevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         connection = sqlite3.connect("./database/database.db") #connect to polldatabase
         cursor = connection.cursor()
         levelroleid = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (interaction.guild.id, )).fetchall()
-        print(levelroleid)
+        #print(levelroleid)
         connection.close()
         if levelroleid is None:
             embed = discord.Embed(title=f'You dont have any levelroles yet.', color=discord.Color.light_grey())
-            await interaction.response.send_message(embed = embed, ephemeral=False)
+            await interaction.response.send_message(embed = embed, ephemeral=True)
         else:
             levelroleoptions = [item[0] for item in levelroleid]
             #print(levelroleoptions)
@@ -178,7 +350,7 @@ class Buttons4LevelsystemSetup(discord.ui.View):
             for i in levelroleoptions:
                 role = discord.utils.get(guild.roles, id=i)
                 labellist.append(discord.SelectOption(label=role.name, value=role.id))
-            await interaction.response.send_message(embed = embed, ephemeral=False, view=LevelRole2RemoveSelect(levelroleoptions = labellist))
+            await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(levelroleoptions = labellist))
 
 
     @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
@@ -329,7 +501,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         file_name = "./database/database.db"
         connection = sqlite3.connect(file_name) #connect to polldatabase
         cursor = connection.cursor()
-        print(f"{guild.id} || {channel.id}")
+        #print(f"{guild.id} || {channel.id}")
         cursor.execute("UPDATE guildsetup set levelingpingmessagechannel = ? WHERE guildid = ?", (channel.id, guild.id))
         connection.commit()
         connection.close()
@@ -357,7 +529,7 @@ class LogSetupView(discord.ui.View):
         if logchannelid is not None:
             await interaction.response.send_message(f"Logging is already activated by setting the logging channel.", ephemeral = True)
         else:
-            await interaction.response.send_message(f"Use first this command to set the logging channel: `/logchannel`", ephemeral = True)        
+            await interaction.response.send_message(f"Use first the button: `Set the logchannel`", ephemeral = True)        
 
     @discord.ui.button(label="Deactivate", custom_id="Logdeactivate")
     async def test(self, interaction: discord.Interaction, button: discord.ui.button):
@@ -376,23 +548,24 @@ class LogChannelSelect(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(WelcomemessageChannelSelectMenu())
-        self.add_item(LogCreateButton())
 
 class LogChannelSelectMenu(discord.ui.ChannelSelect):
     def __init__(self, custom_id = "ChannelSelectLog"):
-        super().__init__(placeholder="Choose the channel where the welcomemessage will be sent.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
+        super().__init__(placeholder="Choose the channel where the log messages will be sent.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
 
     async def callback(self, interaction: discord.Interaction):
-        #save channelid
-        pass
-
-class LogCreateButton(discord.ui.Button):
-    def __init__(self, custom_id = "ChannelCreateLog"):
-        super().__init__(label="Create the Channel")
-
-    async def callback(self, interaction: discord.Interaction):
-        #create channel and save channelid
-        pass
+        channel = self.values[0]
+        channel = await channel.fetch() #converts APPCOMMANDCHANNEL to GUILDCHANNEL
+        member = interaction.user
+        connection = await aiosqlite.connect("./database/database.db")
+        guildid = interaction.guild.id
+        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
+        await connection.commit()
+        await connection.close()
+        embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
+        await channel.send(embed = embed)
+        embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.")
+        await interaction.response.send_message(embed = embed, ephemeral = True)
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

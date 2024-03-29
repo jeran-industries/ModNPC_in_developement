@@ -31,6 +31,7 @@ from anonymousmessage import sendanonymousmessagecommand
 from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
+from autoroles import add_autorole_2_user
 
 #from "dateiname" import "name der funktion"
 
@@ -52,10 +53,12 @@ sys.path.append('.')
 @bot.event
 async def on_member_join(member):
     channel = bot.get_channel(1184497343815499898)
-    embed = discord.Embed(title="Welcome!", description=f"{member.mention} just joined")
+    embed = discord.Embed(title="Welcome!", description=f"{member.mention} just joined to {member.guild.name}")
     await channel.send(embed=embed)
-    sendwelcomemessage(member, bot)
+    #await sendwelcomemessage(member, bot)
     new_member(member)
+    await memberjoin(bot, member)
+    await add_autorole_2_user(member)
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
@@ -88,9 +91,9 @@ async def on_message_delete(message):
 async def on_voice_state_update(member, before, after):
     await voicechatupdate(bot, member, before, after)
 
-@bot.event
-async def on_member_join(member):
-    await memberjoin(bot, member)
+#@bot.event
+#async def on_member_join(member):
+    #await memberjoin(bot, member)
 
 @bot.event
 async def on_raw_member_remove(payload):
@@ -141,9 +144,9 @@ async def ping(interaction: discord.Interaction):
 async def setup(interaction:discord.Interaction):   
     await setupcommand(interaction)
 
-@bot.tree.command()
-async def log_set_channel(interaction: discord.Interaction, channel: discord.TextChannel):
-    await setlogchannelcommand(interaction, channel)
+#@bot.tree.command()
+#async def log_set_channel(interaction: discord.Interaction, channel: discord.TextChannel):
+#    await setlogchannelcommand(interaction, channel)
 
 #Selfroles:
 #v1: selfroles with reactions

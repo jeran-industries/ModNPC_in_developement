@@ -26,7 +26,37 @@ def upload_commands(bot_token):
     headers = {
         "Authorization": f"{bot_token}"
     }
-    commands =  [
+    commands =  [   
+                    {
+                        "name": "add_role_to_all_users",
+                        "description": "You can add to all your users a role with this command.",
+                        "type": 1
+                    },
+                    {
+                        "name": "add_role_to_all_bot_users",
+                        "description": "You can add to only your botusers a role with this command.",
+                        "type": 1
+                    },
+                    {
+                        "name": "add_role_to_all_human_users",
+                        "description": "You can add to only your humanusers a role with this command.",
+                        "type": 1
+                    },
+                    {
+                        "name": "remove_role_from_all_users",
+                        "description": "You can remove from all users a role with this command.",
+                        "type": 1
+                    },
+                    {
+                        "name": "remove_role_from_all_bot_users",
+                        "description": "You can remove from all users a role with this command.",
+                        "type": 1
+                    },
+                    {
+                        "name": "remove_role_from_all_human_users",
+                        "description": "You can remove from all users a role with this command.",
+                        "type": 1
+                    },
                     {
                         "name": "ping",
                         "description": "You can ping the bot and get some interesting data back.",
@@ -39,7 +69,7 @@ def upload_commands(bot_token):
                     },
                     {
                         "name": "setup",
-                        "description": "Probably the most important command of this bot. With it you can activate, deactivate and do much more for setup.",
+                        "description": "Probably the most important command of this bot. With it you can activate, deactivate and do much more for your server. Behind this command hides a setupmenu for Autoroles, Levelsystem, Logging and many more interesting things.",
                         "type": 1
                     },
                     {

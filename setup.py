@@ -16,8 +16,6 @@ async def setupcommand(interaction):
         else:
             misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
             await interaction.response.send_message(embed = misssuccessembed, ephemeral = True)
-    else:
-        await interaction.response.send_message("**ERROR** \nYou cant use this command outside of servers.", ephemeral=True)
 
 #startselectmenu:
 class SelectStart(discord.ui.View):
@@ -570,7 +568,7 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):
     embed= discord.Embed(title=f"Here you can set a welcomemessage up.")
-    await interaction.response.send_message(embed=embed, view=WelcomemessageChannelSelect())
+    await interaction.response.send_message(embed=embed, view=WelcomemessageChannelSelect(), ephemeral = True)
 
 class WelcomemessageChannelSelect(discord.ui.View):
     def __init__(self):

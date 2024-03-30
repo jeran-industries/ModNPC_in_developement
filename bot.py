@@ -31,7 +31,7 @@ from anonymousmessage import sendanonymousmessagecommand
 from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
-from autoroles import add_autorole_2_user
+from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
 
 #from "dateiname" import "name der funktion"
 
@@ -119,12 +119,43 @@ async def on_invite_create(invite):
 async def on_invite_delete(invite):
     await invitedelete(bot, invite)
 
+#add role to all users
+@bot.tree.command()
+async def add_role_to_all_users(interaction: discord.Interaction, role: discord.Role):
+    await addrole2allmembercommand(interaction, role, 0)
+
+#add role to only bots
+@bot.tree.command()
+async def add_role_to_all_bot_users(interaction: discord.Interaction, role: discord.Role):
+    await addrole2allmembercommand(interaction, role, 1)
+
+#add role to only humans
+@bot.tree.command()
+async def add_role_to_all_human_users(interaction: discord.Interaction, role: discord.Role):
+    await addrole2allmembercommand(interaction, role, 2)
+
+#remove role from all users
+@bot.tree.command()
+async def remove_role_from_all_users(interaction: discord.Interaction, role: discord.Role):
+    await removerolefromallmembercommand(interaction, role, 0)
+
+#remove role from only bots
+@bot.tree.command()
+async def remove_role_from_all_bot_users(interaction: discord.Interaction, role: discord.Role):
+    await removerolefromallmembercommand(interaction, role, 1)
+
+#remove role from only humans
+@bot.tree.command()
+async def remove_role_from_all_human_users(interaction: discord.Interaction, role: discord.Role):
+    await removerolefromallmembercommand(interaction, role, 2)
+
 #Simpletestcommand    
 @bot.tree.command()
 async def ping(interaction: discord.Interaction):
     embed = discord.Embed(title = "Pong")
     embed.add_field(name = f"Latency:", value = f"{math.floor(bot.latency * 1000)} ms", inline = False)
     embed.add_field(name = f"Users:", value = f"{len(bot.users)}", inline = False)
+    embed.add_field(name = f"Guilds:", value = f"{len(bot.guilds)}", inline = False)
     await interaction.response.send_message(embed = embed)
 
 #@bot.command()
@@ -274,7 +305,7 @@ async def send_webhook(interaction: discord.Interaction, channel: discord.TextCh
         e.add_field(name="Field 1", value="Value 1")
         e.add_field(name="Field 2", value="Value 2")
 
-        await webhook.send(embed=e)
+        #await webhook.send(embed=e)
 
 @bot.event
 async def on_raw_reaction_add(payload): #reactionadded trigger

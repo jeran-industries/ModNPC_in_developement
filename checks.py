@@ -24,6 +24,12 @@ async def check4botupdatechannel(interaction):
     else:
         return(True)
     
+async def check4role(member, role):
+    for role4check in member.roles:
+        if role4check.id == role.id:
+            return(True)
+    return(False)
+
 async def check4dm(interaction):
     membername = interaction.user.name
     if str(interaction.channel) == f"Direct Message with {membername}":

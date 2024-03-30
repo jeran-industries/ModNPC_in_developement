@@ -9,9 +9,6 @@ ModNPC features:
 ->Up to 9 options
 ->custom votecounts
 ModNPC's problems:
--database problems in polls:
-->switching right now from json to sqlite
--no application commands yet
 Plans for ModNPC:
 -logs
 -custom vcs

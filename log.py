@@ -72,8 +72,8 @@ async def messageeditedeventlog(bot, before, after):
     logchannel = await getlogchannel(bot, after.guild.id)
     if logchannel is not None and before is not None and after is not None:
         embed = discord.Embed(title = f"{after.author.display_name} ({after.author.id}) just edited the message: {after.jump_url}.")
-        embed.add_field(name = f"Before: ({before.created_at})", value = f"```{before.content}```\n\nEmbeds if existing in the thread", inline = True)
-        embed.add_field(name = f"After: ({after.edited_at})", value = f"```{after.content}```\n\nEmbeds if existing in the thread", inline = True)
+        embed.add_field(name = f"Before: ({before.created_at})", value = f"```{before.content}```\n\n||Embeds if existing in the thread||", inline = True)
+        embed.add_field(name = f"After: ({after.edited_at})", value = f"```{after.content}```\n\n||Embeds if existing in the thread||", inline = True)
         await loginfosandsending(embed, after.author, bot, logchannel, message1=before, message2=after)
     #v2:
     #write_into_log(eventtype, message.author.id, message.guild.id, message.channel.id, message.id, message.content, str(message.edited_at))
@@ -84,7 +84,7 @@ async def messagedeletedeventlog(bot, message):
         logchannel = await getlogchannel(bot, message.guild.id)
         if logchannel is not None:
             embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")
-            embed.add_field(name = f"Content: ({message.created_at})", value = f"```{message.content}```\n\n||Embeds if existing in the thread", inline = True)
+            embed.add_field(name = f"Content: ({message.created_at})", value = f"```{message.content}```\n\n||Embeds if existing in the thread||", inline = True)
             await loginfosandsending(embed, message.author, bot, logchannel, message1=message)
     #v1:
     #file_name = "./Logs/Messages/V1/" + str(message.guild.id) + '/' + str(message.channel.id) + ".json"

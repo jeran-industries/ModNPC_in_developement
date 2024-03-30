@@ -6,6 +6,7 @@ import sqlite3
 import discord
 import aiosqlite
 from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
 
 #own modules:
 from membermanagement import new_member
@@ -411,3 +412,8 @@ async def claimcommand(interaction):
     await connection.close()
     embed = discord.Embed(title="Thanks for upvoting!!!", description="Here is the link to upvote: https://discordbotlist.com/bots/modnpc/upvote")
     await interaction.response.send_message(embed=embed)
+
+def rankcardgenerator(avatar, username, xp):
+
+    return(image)
+    pass

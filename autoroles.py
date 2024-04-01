@@ -11,7 +11,9 @@ async def add_autorole_2_user(member):
     guildid = guild.id
     connection = await aiosqlite.connect("./database/database.db")
 
-    #all(0) usergroups: bot(1) and humanusers(2)
+    #print("\n Im here \n")
+
+    ##all(0) usergroups: bot(1) and humanusers(2)
     membergroup = 0
     roleidsalluserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guildid, membergroup))
     roleidsallusers = await roleidsalluserscursor.fetchall()
@@ -21,22 +23,22 @@ async def add_autorole_2_user(member):
     #botusers:
     if member.bot == True:
         membergroup=1
-        roleidsbotuserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guildid, membergroup))
-        roleidsallbotusers = await roleidsbotuserscursor.fetchall()
-        await roleidsbotuserscursor.close()
-        if roleidsallbotusers != []:
-            roles = await getroles(roles=roles, roleids=roleidsallbotusers, guild=guild, member=member)
+        await membergrouproleassignement(connection, guild, membergroup, member)
 
     #humanusers:
     else:
         membergroup=2
-        roleidshumanuserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guildid, membergroup))
-        roleidsallhumanusers = await roleidshumanuserscursor.fetchall()
-        await roleidshumanuserscursor.close()
-        if roleidsallbotusers != []:
-            roles = await getroles(roles=roles, roleids=roleidsallhumanusers, guild=guild, member=member)
+        await membergrouproleassignement(connection, guild, membergroup, member)
 
     await connection.close()
+
+async def membergrouproleassignement(connection, guild, membergroup, member):
+    roleidsmembergroupuserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guild.id, membergroup))
+    roleidsmembergroupusers = await roleidsmembergroupuserscursor.fetchall()
+    await roleidsmembergroupuserscursor.close()
+    if roleidsmembergroupusers != []:
+        roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)
+
 
 async def addrole2allmembercommand(interaction, role, membergroup):
     if await check4dm(interaction) == False:

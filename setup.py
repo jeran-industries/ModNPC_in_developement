@@ -67,7 +67,7 @@ async def autorolessetup(interaction):
     
     #print(labellist)
 
-    await interaction.response.send_message("This part isnt programmed yet", ephemeral = True, view = ViewAutoRoleSetup())
+    await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True, view = ViewAutoRoleSetup())
 
 class ViewAutoRoleSetup(discord.ui.View):
     def __init__(self):
@@ -137,8 +137,6 @@ class RoleSelectAutoRoleAddSetup(discord.ui.RoleSelect):
             await interaction.response.send_message(f"Who should be affected?", ephemeral = True, view = ViewAutoRoleUserGroupSetup(role=role))      
         else:
             message = await interaction.response.send_message(f"The role can't be assigned by the bot because the role is above the highest role of the bot.", ephemeral = True)
-            await asyncio.sleep(5)
-            await message.delete()
 
 class ViewAutoRoleUserGroupSetup(discord.ui.View):
     def __init__(self, role):
@@ -156,7 +154,7 @@ class SelectAutoRoleUserGroupSetup(discord.ui.Select):
         super().__init__(placeholder="Choose the group the role will be assigned to on joinup.", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        #await interaction.response.defer()
         option=self.values[0]
         role = self.role
         guild = interaction.guild

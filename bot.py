@@ -53,7 +53,7 @@ sys.path.append('.')
 @bot.event
 async def on_member_join(member):
     channel = bot.get_channel(1184497343815499898)
-    embed = discord.Embed(title="Welcome!", description=f"{member.mention} just joined to {member.guild.name}")
+    embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     await channel.send(embed=embed)
     #await sendwelcomemessage(member, bot)
     new_member(member)
@@ -328,6 +328,12 @@ async def on_command_error(ctx, error):
 @bot.event
 async def on_guild_join(guild):
     database_checking_and_creating(guild.id)
+    channel = bot.get_channel(1184497343815499898)
+    for channel in guild.channels:
+        inviteurl = await channel.create_invite()
+        break
+    embed = discord.Embed(title="New guild!", description=f"{member.guild.name} just joined the system: {inviteurl}")
+    await channel.send(embed=embed)
     for member in guild.members:
         new_member(member)
 
@@ -370,7 +376,8 @@ async def on_disconnect():
     ten_minute_loop.stop()
 
 #Do u want to debug?
-debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
+debug = None
+#debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
 if debug == "debug":
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
 else:

@@ -3,7 +3,7 @@ import sqlite3
 import datetime
 
 async def sendanonymousmessagecommand(interaction, message, channel):
-    filename = "./database/database"
+    filename = "./database/database.db"
     connection = sqlite3.connect(filename) 
     cursor = connection.cursor()
     cursor.execute("SELECT anonymousmessagestatus FROM guildsetup WHERE guildid = ?", (interaction.guild.id,))
@@ -38,7 +38,7 @@ async def sendanonymousmessagecommand(interaction, message, channel):
 #async def anonymouscommandsetup(interaction, cooldown):
 #    member = interaction.user
 #    if member.guild_permissions.administrator:
-#        filename = "./database/database"
+#        filename = "./database/database.db"
 #        connection = sqlite3.connect(filename)
 #        cursor = connection.cursor()
 #        cursor.execute("UPDATE guildsetup set anonymousmessagestatus = ? WHERE guildid = ?", (True, interaction.guild.id))

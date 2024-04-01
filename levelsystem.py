@@ -6,7 +6,7 @@ import sqlite3
 import discord
 import aiosqlite
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
 
 #own modules:
 from membermanagement import new_member
@@ -36,38 +36,43 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
         #new_member(member)
         #new_message(message)
     #v2:
-    file_name = "./database/database.db"
-    connection = sqlite3.connect(file_name) #connect to polldatabase
-    cursor = connection.cursor()
+    #cursor = connection.cursor()
     try:
         guildid = message.guild.id
     except AttributeError:
-        guildid = 0
-    cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-    if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id)).fetchone()) is not None: 
-        if AttributeError:
-            pass
-        if guildid != 0:
-            cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
-            messagessentguild = next(cursor, [None])[0]
-            cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
-            xpguild = next(cursor, [None])[0]
-            cursor.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentguild + 1, guildid, message.author.id))
-            connection.commit()
-            cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 1, guildid, message.author.id))
-            await new_level_ping(bot, message.author.id, guildid, xpguild, xpguild + 1)
-            connection.commit()
+        guildid = None
+    file_name = "./database/database.db"
+    connection = await aiosqlite.connect(file_name) #connect to polldatabase
+    await connection.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
+    if guildid is not None:
+        messagessentguildcursor = await connection.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
+        messagessentguild = await messagessentguildcursor.fetchone()
+        messagessentguild = messagessentguild[0]
+        await messagessentguildcursor.close()
 
-        cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
-        messagessentglobal = next(cursor, [None])[0]
-        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
-        xpglobal = next(cursor, [None])[0]
-        cursor.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentglobal + 1, 0, message.author.id))
-        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, message.author.id))
-        connection.commit()
-        connection.close()
-    else:
-        new_member(message.author)
+        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
+        xpguild = await xpguildcursor.fetchone()
+        xpguild = xpguild[0]
+        await xpguildcursor.close()
+
+        await connection.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentguild + 1, guildid, message.author.id))
+        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 1, guildid, message.author.id))
+        await new_level_ping(bot, message.author.id, guildid, xpguild, xpguild + 1)
+
+    messagessentglobalcursor = await connection.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
+    messagessentglobal = await messagessentglobalcursor.fetchone()
+    messagessentglobal = messagessentglobal[0]
+    await messagessentglobalcursor.close()
+
+    xpglobalcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
+    xpglobal = await xpglobalcursor.fetchone()
+    xpglobal = xpglobal[0]
+    await xpglobalcursor.close()
+
+    await connection.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentglobal + 1, 0, message.author.id))
+    await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, message.author.id))
+    await connection.commit()
+    await connection.close()
 
 async def new_minute_in_vc(bot):
     for guild in bot.guilds:
@@ -118,6 +123,7 @@ async def new_minute_in_vc(bot):
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
     #guild_id = interaction.guild.id
+    await interaction.response.defer(thinking=True)
     member_id = 0
     if mentionedmember == None:
         member = interaction.user
@@ -145,20 +151,27 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     voicetimeguild = next(cursor, [None])[0]
     cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
     xpguild = next(cursor, [None])[0]
-    level = math.floor((xpguild ** 0.5) / 5)
+    level = math.floor((xpguild ** 0.5) / 5) #f(x) = x^0.5 / 5 => 5 * f(x) = x^0.5 => log5 * f(x) (0.5) = x
     # Create the embed
     embed = discord.Embed(title=f'Level {level}', description=f'{xpguild} XP', color=discord.Color.green())
     if member.bot:
         embed.set_author(name=member.display_name)
     else:
         embed.set_author(name=member.display_name, icon_url=member.avatar.url)
-    embed.add_field(name="Place:", value = f"#{await checkleaderboard(interaction, member.id)}", inline=False)
+    rank = await checkleaderboard(interaction, member.id)
+    embed.add_field(name="Place:", value = f"#{rank}", inline=False)
     embed.add_field(name="Voicetime:", value = str(voicetimeguild) + " minutes", inline=False)
     embed.add_field(name="Messages sent:", value = str(messagessentguild) + " messages", inline=False)
     embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
     
     # Send the embed
-    await interaction.response.send_message(embed=embed)
+    #member.avatar.save("D:/Coding/Discordbot/ModNPC_in_developement/testfiles/rankcard/pfptest.png")
+    await member.display_avatar.save(fp=f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
+    #print(f"\n{file}\n")
+    rankcardgenerator(interaction.user.display_name, member.id, rank, xpguild, level, guildid)
+    file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
+    #await interaction.followup.send(file = file)
+    await interaction.followup.send(embed=embed)
 
     #v1:
     #server_id = ctx.guild.id
@@ -413,7 +426,95 @@ async def claimcommand(interaction):
     embed = discord.Embed(title="Thanks for upvoting!!!", description="Here is the link to upvote: https://discordbotlist.com/bots/modnpc/upvote")
     await interaction.response.send_message(embed=embed)
 
-def rankcardgenerator(avatar, username, xp):
+def rankcardgenerator(username, memberid, rank, xp, level, guildid):
+    # Load the background image (replace with your own image)
+    background_image_path = f"database/rankcards/backgrounds/{guildid}/{memberid}.png"
+    background_image = Image.open(background_image_path).convert("RGBA")
 
-    return(image)
-    pass
+    pfp = Image.open("./database/rankcards/profilepictures/1128824578848862228/945785058676072448.png").convert("RGBA")
+    #pfp = avatarfile.convert("RGBA")
+    #pfp = pfp.resize((480, 480))
+    pfp = ImageOps.fit(pfp, (480, 480), method=Image.Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))
+    offset = 0
+    blur_radius = 5
+    offset = blur_radius * 2 + offset
+    mask = Image.new("L", pfp.size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((offset, offset, pfp.size[0] - offset, pfp.size[1] - offset), fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(blur_radius))
+
+    pfp = pfp.copy()
+    pfp.putalpha(mask)
+
+    background_image.paste(pfp, (75, 75), pfp)
+
+    progressbarfront = Image.open("./database/rankcards/textures/progressbarfront.png").convert("RGBA")
+
+    # Load a font (choose a font of your preference)
+    font_path = "arial.ttf"
+    font_size = 80
+    font = ImageFont.truetype(font_path, font_size)
+
+
+    # User's rank details (customize as needed)
+    user_name = username
+    user_rank = rank
+    old_level = level
+    new_level = level + 1
+    percent = (25 * new_level**5 - xp) / (25 * new_level**5 - 25 * old_level**5)
+
+    percent_position = (837, 45)
+    
+
+    # change width of progress bar based on percentage
+    progressbarfront = progressbarfront.resize((1675, 80))
+    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * percent / 100), progressbarfront.size[1]))
+    progressbar = Image.open("./database/rankcards/textures/progressbarback.png").convert("RGBA")
+    progressbar = progressbar.resize((1675, 80))
+    progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
+    progressbar.paste(progressbarfront, (5, 5), progressbarfront)
+    drawprogressbar = ImageDraw.Draw(progressbar)
+    drawprogressbar.text(percent_position, f"{percent}%", fill="white", anchor="mm", font=font)
+    if old_level/10 >= 1:
+        if old_level/100 >= 1:
+            if old_level/1000 >= 1:
+                pass
+            else:
+                old_level_position = (100, 0)
+        else:
+            old_level_position = (60, 0)
+    else:
+        old_level_position = (20, 0)
+    drawprogressbar.text(old_level_position, f"{old_level}", fill="white", font=font)
+
+    if new_level/10 >= 1:
+        if new_level/100 >= 1:
+            if new_level/1000 >= 1:
+                pass
+            else:
+                new_level_position = (1535, 0)
+        else:
+            new_level_position = (1575, 0)
+    else:
+        new_level_position = (1615, 0)
+    drawprogressbar.text(new_level_position, f"{new_level}", fill="white", font=font)
+
+    # draw progress bar from x,y 50 of background image
+    background_image.paste(progressbar, (630, 400), progressbar)
+
+    # Create a drawing context
+    draw = ImageDraw.Draw(background_image)
+
+    # Position to draw the user's name
+    name_position = (630, 150)
+    draw.text(name_position, f"{user_name}", fill="white", font=font)
+
+    # Position to draw the user's rank
+    rank_position = (630, 225)
+    draw.text(rank_position, f"Rank: #{user_rank}", fill="white", font=font)
+
+    # Position to draw the user's score
+    total_xp_position = (630, 300)
+    draw.text(total_xp_position, f"Total XP: {xp}", fill="white", font=font)
+
+    background_image.save(f"./database/rankcards/generated/{guildid}/{memberid}.png")

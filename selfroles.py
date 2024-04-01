@@ -26,7 +26,7 @@ async def create_selfrole(interaction, content, channeltopostin): #create a new 
             cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER)")
             embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
             message = await channeltopostin.send(embed=embed)
-            cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?, ?)", (interaction.guild.id, message.id, False)) #write into the table the data
+            cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?, ?, ?)", (interaction.guild.id, message.id, False, None)) #write into the table the data
             await interaction.response.send_message("**Success** \nThe reactionrolesmessage was created.", ephemeral=True)
             connection.commit()
             connection.close()

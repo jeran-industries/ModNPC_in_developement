@@ -38,10 +38,11 @@ def database_checking_and_creating(guildid):
     except:
         pass
 
-
-
     connection.commit()
     connection.close()
+
+    server_folders(guildid)
+
     #Setup, where everything will be loaded from
     #server_setup_path = './Setup/' + str(server_id) + ".json"
     #if os.path.exists(server_setup_path):
@@ -64,24 +65,42 @@ def database_checking_and_creating(guildid):
         #    f.close()
 
 def server_folders(guild_id):
+    guild_path_generated_rankcard = './database/rankcards/generated/' + str(guild_id) + "/"
+    folderbuilder(guild_path_generated_rankcard)
+
+    guild_path_background_rankcard = './database/rankcards/backgrounds/' + str(guild_id) + "/"
+    folderbuilder(guild_path_background_rankcard)
+
+    guild_path_profilepictures_rankcard = './database/rankcards/profilepictures/' + str(guild_id) + "/"
+    folderbuilder(guild_path_profilepictures_rankcard)
+    
+    global_path_generated_rankcard = './database/rankcards/generated/' + str(0) + "/"
+    folderbuilder(global_path_generated_rankcard)
+
+    global_path_background_rankcard = './database/rankcards/backgrounds/' + str(0) + "/"
+    folderbuilder(global_path_background_rankcard)
+
+    global_path_profilepictures_rankcard = './database/rankcards/profilepictures/' + str(0) + "/"
+    folderbuilder(global_path_profilepictures_rankcard)
+
     #Member
-    guild_path_reactionlog_v1 = './Member/' + str(guild_id) + "/"
-    folderbuilder(guild_path_reactionlog_v1)
+    #guild_path_reactionlog_v1 = './Member/' + str(guild_id) + "/"
+    #folderbuilder(guild_path_reactionlog_v1)
 
-    guild_path_polls_v1 = './Polls/V1/' + str(guild_id) + "/"
-    folderbuilder(guild_path_polls_v1)
+    #guild_path_polls_v1 = './Polls/V1/' + str(guild_id) + "/"
+    #folderbuilder(guild_path_polls_v1)
 
-    guild_path_polls_v2 = './Polls/V2/'
-    folderbuilder(guild_path_polls_v2)
+    #guild_path_polls_v2 = './Polls/V2/'
+    #folderbuilder(guild_path_polls_v2)
 
-    guild_path_selfroles_v1 = './Selfroles/V1/' + str(guild_id) + "/"
-    folderbuilder(guild_path_selfroles_v1)
+    #guild_path_selfroles_v1 = './Selfroles/V1/' + str(guild_id) + "/"
+    #folderbuilder(guild_path_selfroles_v1)
 
-    guild_path_reactionlog_v1 = './Logs/Reactions/V1/' + str(guild_id) + "/"
-    folderbuilder(guild_path_reactionlog_v1)
+    #guild_path_reactionlog_v1 = './Logs/Reactions/V1/' + str(guild_id) + "/"
+    #folderbuilder(guild_path_reactionlog_v1)
 
-    guild_path_messagelog_v1 = './Logs/Messages/V1/' + str(guild_id) + "/"
-    folderbuilder(guild_path_messagelog_v1)
+    #guild_path_messagelog_v1 = './Logs/Messages/V1/' + str(guild_id) + "/"
+    #folderbuilder(guild_path_messagelog_v1)
 
 #checking and creating
 def folderbuilder(folder_path):

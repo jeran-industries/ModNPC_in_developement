@@ -77,7 +77,8 @@ async def on_message(message):
     await bot.process_commands(message) 
     #print(message)
     await messagesenteventlog(bot, message) #messagelog
-    await new_message(bot, message) #levelingsystem
+    if message.author.bot == False:
+        await new_message(bot, message) #levelingsystem
 
 @bot.event
 async def on_message_edit(before, after):

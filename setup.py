@@ -435,13 +435,13 @@ class CreateLevelrole(discord.ui.View):
             cursor.execute(f"INSERT INTO levelroles VALUES ({interaction.guild.id}, {self.role[0].id}, {self.level}, {self.keeprole})") #write into the table the data
             connection.commit()
             connection.close()
-            await interaction.response.send_message(f"Success the levelrole was created.")
+            await interaction.response.send_message(f"Success the levelrole was created.", ephemeral=True)
         else:
-            await interaction.response.send_message(f"This role is already used.")
+            await interaction.response.send_message(f"This role is already used.", ephemeral=True)
 
     @discord.ui.button(label="Discard", custom_id="discard")
     async def discardselfrolebutton(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"You discarded the changes")
+        await interaction.response.send_message(f"You discarded the changes", ephemeral=True)
 
 class LevelRole2RemoveSelectMenu(discord.ui.Select):
     def __init__(self, levelroleoptions):
@@ -453,7 +453,7 @@ class LevelRole2RemoveSelectMenu(discord.ui.Select):
         cursor.execute("DELETE FROM levelroles WHERE roleid = ?", (self.values[0],))
         connection.commit()
         connection.close()
-        await interaction.response.send_message(content=f"Success the levelrole was deleted.")
+        await interaction.response.send_message(content=f"Success the levelrole was deleted.", ephemeral=True)
 
 class LevelRole2RemoveSelect(discord.ui.View):
     def __init__(self, levelroleoptions):
@@ -480,7 +480,7 @@ class MentionableSelectLevelReset(discord.ui.MentionableSelect):
         connection.commit()
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"The levelingpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
-        await interaction.response.send_message(embed = embed)
+        await interaction.response.send_message(embed = embed, ephemeral=True)
 
 class ViewLevelPingSetup(discord.ui.View):
     def __init__(self):
@@ -502,7 +502,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         connection.commit()
         connection.close()
         embed = discord.Embed(title=f'Success', description=f"The levelingpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
-        await interaction.response.send_message(embed = embed)
+        await interaction.response.send_message(embed = embed, ephemeral=True)
 
 #Logs:
 async def logsetup(interaction: discord.Interaction):

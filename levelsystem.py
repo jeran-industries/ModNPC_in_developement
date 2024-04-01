@@ -78,43 +78,44 @@ async def new_minute_in_vc(bot):
     for guild in bot.guilds:
         for vc in guild.voice_channels:
             for member in vc.members:
-                if len(member.voice.channel.members) > 1:
-                    #file_name = "./Member/" + str(guild.id) + "/" + str(member.id) + ".json"
-                    #if os.path.exists(file_name):
-                        #with open(file_name, 'r', encoding = 'utf-8') as f:
-                        #    data = json.load(f)
-                        #xp = data["stats"][0]["xp"]
-                        #data["stats"][0]["xp"] = xp + 10
-                        #voicetime = data["stats"][0]["voicetime"]
-                        #data["stats"][0]["voicetime"] = voicetime + 1
-                        #with open(file_name, 'w', encoding = 'utf-8') as f:
-                        #    json.dump(data, f, indent = 1)
-                        #    f.close()
-                    #else:
-                        #new_member(member)
-                    #v2:
+                if member.bot == False and len(member.voice.channel.members) > 1:
                     file_name = "./database/database.db"
-                    connection = sqlite3.connect(file_name) #connect to polldatabase
-                    cursor = connection.cursor()
-                    cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-                    print(f"{member.guild.id} || {member.id}")
-                    if (cursor.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id)).fetchone()) is not None:
-                        print("Im here")
-                        cursor.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
-                        voicetimeguild = next(cursor, [None])[0]
-                        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
-                        xpguild = next(cursor, [None])[0]
-                        cursor.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeguild + 1, member.guild.id, member.id))
-                        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 5, member.guild.id, member.id))
+                    connection = await aiosqlite.connect(file_name) #connect to polldatabase
+                    await connection.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
+                    #print(f"{member.guild.id} || {member.id}")
+
+                    membercursor = connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+                    member = await membercursor.fetchone()
+                    await membercursor.close()
+
+                    if member is not None:
+                        
+                        voicetimeguildcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+                        voicetimeguild = await voicetimeguildcursor.fetchone()
+                        voicetimeguild = voicetimeguild[0]
+                        await voicetimeguildcursor.close()
+
+                        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+                        xpguild = await xpguildcursor.fetchone()
+                        xpguild = xpguild[0]
+                        await xpguildcursor.close()
+
+                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeguild + 1, member.guild.id, member.id))
+                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 5, member.guild.id, member.id))
                         await new_level_ping(bot, member.id, member.guild.id, xpguild, xpguild + 5)
 
-                        cursor.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
-                        voicetimeglobal = next(cursor, [None])[0]
-                        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
-                        xpglobal = next(cursor, [None])[0]
+                        voicetimeglobalcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
+                        voicetimeglobal = await voicetimeglobalcursor.fetchone()
+                        voicetimeglobal = voicetimeglobal[0]
+                        await voicetimeglobalcursor.close()
 
-                        cursor.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeglobal + 1, 0, member.id))
-                        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, member.id))           
+                        xpglobalcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
+                        xpglobal = await xpglobalcursor.fetchone()
+                        xpglobal = xpglobal[0]
+                        await xpglobalcursor.close()
+
+                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeglobal + 1, 0, member.id))
+                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, member.id))           
                     else:
                         new_member(member)
                     connection.commit()

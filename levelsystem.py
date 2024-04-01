@@ -76,33 +76,34 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
 
 async def new_minute_in_vc(bot):
     for guild in bot.guilds:
+        guildid = guild.id
         for vc in guild.voice_channels:
             for member in vc.members:
-                if member.bot == False and len(member.voice.channel.members) > 1:
+                if member.bot == False:
                     file_name = "./database/database.db"
                     connection = await aiosqlite.connect(file_name) #connect to polldatabase
                     await connection.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-                    #print(f"{member.guild.id} || {member.id}")
+                    #print(f"{guildid} || {member.id}")
 
-                    membercursor = connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
-                    member = await membercursor.fetchone()
+                    membercursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
+                    registeredmember = await membercursor.fetchone()
                     await membercursor.close()
 
-                    if member is not None:
+                    if registeredmember is not None:
                         
-                        voicetimeguildcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+                        voicetimeguildcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
                         voicetimeguild = await voicetimeguildcursor.fetchone()
                         voicetimeguild = voicetimeguild[0]
                         await voicetimeguildcursor.close()
 
-                        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+                        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
                         xpguild = await xpguildcursor.fetchone()
                         xpguild = xpguild[0]
                         await xpguildcursor.close()
 
-                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeguild + 1, member.guild.id, member.id))
-                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 5, member.guild.id, member.id))
-                        await new_level_ping(bot, member.id, member.guild.id, xpguild, xpguild + 5)
+                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeguild + 1, guildid, member.id))
+                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 5, guildid, member.id))
+                        await new_level_ping(bot, member.id, guildid, xpguild, xpguild + 5)
 
                         voicetimeglobalcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
                         voicetimeglobal = await voicetimeglobalcursor.fetchone()
@@ -118,8 +119,8 @@ async def new_minute_in_vc(bot):
                         await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, member.id))           
                     else:
                         new_member(member)
-                    connection.commit()
-                    connection.close()
+                    await connection.commit()
+                    await connection.close()
 
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
@@ -243,7 +244,8 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
                 await member.add_roles(role)
                 oldroles = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ? AND level < ? AND keeprole = 0", (guildid, newlevel)).fetchall()
                 if oldroles is not None:
-                    await member.remove_roles(oldroles)
+                    for oldrole in oldroles:
+                        await member.remove_roles(oldrole)
                 embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel} and got the role `{role.name}`.', color=discord.Color.green())
             else:
                 embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel}.', color=discord.Color.green())
@@ -369,7 +371,7 @@ async def addxp2user(interaction, bot, xptoadd, mentionedmember):
 
 async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
     member = interaction.user
-    if await check4dm(interaction) and member.guild_permissions.administrator:
+    if await check4dm(interaction) == False and member.guild_permissions.administrator:
         if mentionedmember != None:
             member = mentionedmember
         #v2:

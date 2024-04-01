@@ -61,18 +61,20 @@ async def check4upvotebotlist(bot, botlisttoken):
             print(memberid)
             cursor = await connection.execute('SELECT last_upvote FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
             timelastupvote = await cursor.fetchone()
-            timelastupvote = timelastupvote[0]
-            if timelastupvote == None:
-                timelastupvote = 0
-            time = int(round((datetime.now() - datetime(1970, 1, 1)).total_seconds()))
-            if time-timelastupvote >= 43200:
-                print("Im here")
-                await connection.execute("UPDATE membertable set last_upvote = ? WHERE guildid = ? AND memberid = ?", (time, 0, memberid))
-                xpcursor = await connection.execute('SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
-                xp = await xpcursor.fetchone()
-                xp = xp[0]        
-                await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xp + 100, 0, memberid))
-                await xpcursor.close()
+            if timelastupvote is not None:
+                print(timelastupvote)
+                timelastupvote = timelastupvote[0]
+                if timelastupvote == None:
+                    timelastupvote = 0
+                time = int(round((datetime.now() - datetime(1970, 1, 1)).total_seconds()))
+                if time-timelastupvote >= 43200:
+                    print("Im here")
+                    await connection.execute("UPDATE membertable set last_upvote = ? WHERE guildid = ? AND memberid = ?", (time, 0, memberid))
+                    xpcursor = await connection.execute('SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
+                    xp = await xpcursor.fetchone()
+                    xp = xp[0]        
+                    await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xp + 100, 0, memberid))
+                    await xpcursor.close()
             await cursor.close()
         await connection.commit()
         await connection.close()

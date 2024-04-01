@@ -80,7 +80,7 @@ async def messageeditedeventlog(bot, before, after):
 
 async def messagedeletedeventlog(bot, message):
     eventtype="deleted"
-    if bot.user.id != message.member.id:
+    if bot.user.id != message.author.id:
         logchannel = await getlogchannel(bot, message.guild.id)
         if logchannel is not None:
             embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")

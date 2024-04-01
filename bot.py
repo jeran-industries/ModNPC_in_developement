@@ -322,9 +322,9 @@ async def on_raw_reaction_remove(payload): #reactionremoved trigger
     #await editingpollafterremovedreaction(payload, bot)
     await remove_selfrole_from_member(bot, payload)
 
-@bot.event
-async def on_command_error(ctx, error):
-    await ctx.reply(f"Hey there is an error: {error} \n \n Look up if you did everything right with our help command. If you dont understand and cannot find the error, consider joining my support server and opening a ticket: https://discord.com/channels/1128824578848862228/1191733071532261426")
+#@bot.event
+#async def on_command_error(ctx, error):
+#    await ctx.reply(f"Hey there is an error: {error} \n \n Look up if you did everything right with our help command. If you dont understand and cannot find the error, consider joining my support server and opening a ticket: https://discord.com/channels/1128824578848862228/1191733071532261426")
 
 @bot.event
 async def on_guild_join(guild):

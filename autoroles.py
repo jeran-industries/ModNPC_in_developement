@@ -36,6 +36,7 @@ async def membergrouproleassignement(connection, guild, membergroup, member):
     roleidsmembergroupuserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guild.id, membergroup))
     roleidsmembergroupusers = await roleidsmembergroupuserscursor.fetchall()
     await roleidsmembergroupuserscursor.close()
+    roles = []
     if roleidsmembergroupusers != []:
         roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)
 

@@ -116,8 +116,8 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
         embed.set_author(name=member.display_name)
     else:
         embed.set_author(name=member.display_name, icon_url=member.avatar.url)
-    rank = await checkleaderboard(interaction, bot, member.id)
-    embed.add_field(name="Place:", value = f"#{rank}", inline=False)
+    #rank = await checkleaderboard(interaction, bot, member.id)
+    #embed.add_field(name="Place:", value = f"#{rank}", inline=False)
     embed.add_field(name="Voicetime:", value = str(voicetime) + " minutes", inline=False)
     embed.add_field(name="Messages sent:", value = str(messagessent) + " messages", inline=False)
     embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
@@ -181,6 +181,9 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
         oldlevel = 0
     if newlevel < 0:
         newlevel = 0
+    channelid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="levelingpingmessagechannel")  
+    if channelid is None:
+        return()
     if oldlevel < newlevel and memberid != bot.user.id: #gets xp
         guild = bot.get_guild(guildid) #getting guild
         member = guild.get_member(memberid) #getting member
@@ -199,7 +202,6 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
                 roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid") 
                 role = guild.get_role(roleid)
                 await member.remove_roles(role)
-        channelid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="levelpingmessagechannel")
         channel = await bot.fetch_channel(channelid)
         await channel.send(embed=embed)
 
@@ -263,6 +265,7 @@ async def checkleaderboard(interaction, bot, memberid = None):
         if xp is not None:
             # Count members with more XP than the searched member
             place = await asqlite_pull_data(bot=bot, statement=f"SELECT COUNT(*) FROM membertable WHERE guildid = {guildid} AND xp > {xp}", data_to_return="memberid") + 1
+            return(place)
         else:
             return None  #Member not found
     else:

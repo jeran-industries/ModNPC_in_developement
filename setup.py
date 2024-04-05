@@ -279,8 +279,8 @@ class ChannelSelectBotupdateSetup(discord.ui.ChannelSelect):
         cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, interaction.guild.id))
         connection.commit()
         connection.close()
-        embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green(), ephemeral = True)
-        await interaction.response.send_message(embed = embed)
+        embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green())
+        await interaction.response.send_message(embed = embed, ephemeral = True)
 
 #Custom VCs:
 async def customvcsetup(interaction):
@@ -494,6 +494,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
         guild = interaction.guild
+        #try:
         file_name = "./database/database.db"
         connection = sqlite3.connect(file_name) #connect to polldatabase
         cursor = connection.cursor()
@@ -507,7 +508,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
 #Logs:
 async def logsetup(interaction: discord.Interaction):
     member = interaction.user
-    await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True)
+    await interaction.response.send_message("This part isnt completly programmed yet and the setupmenu for logging is in beta. This is why some buttons are deactivated.", ephemeral = True)
 
 class LogSetupView(discord.ui.View):
     def __init__(self):
@@ -589,7 +590,7 @@ class WelcomemessageModal(discord.ui.Modal, title="What is the welcomemessage?")
     contentwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.long)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(view=WelcomemessageConfirmation(channel=self.channel, headerwelcomemessage = self.headerwelcomemessage, contentwelcomemessage = self.contentwelcomemessage))
+        await interaction.response.send_message(view=WelcomemessageConfirmation(channel=self.channel, headerwelcomemessage = self.headerwelcomemessage, contentwelcomemessage = self.contentwelcomemessage), ephemeral=True)
 
 class WelcomemessageConfirmation(discord.ui.View):
     def __init__(self, channel, headerwelcomemessage, contentwelcomemessage):
@@ -609,8 +610,8 @@ class WelcomemessageConfirmation(discord.ui.View):
         cursor.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage))
         connection.commit()
         connection.close()
-        await interaction.response.send_message(f"Success the welcomemessage was created. \n| {channelid} |\n| {headerwelcomemessage} |\n| {contentwelcomemessage} |")
+        await interaction.response.send_message(f"Success the welcomemessage was created. \n| {channelid} |\n| {headerwelcomemessage} |\n| {contentwelcomemessage} |", ephemeral=True)
 
     @discord.ui.button(label="DiscardWelcomemessage", custom_id="discardwelcomemessage")
     async def discardwelcomemessagebutton(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"You discarded the changes")
+        await interaction.response.send_message(f"You discarded the changes", ephemeral=True)

@@ -14,6 +14,8 @@ import logging
 import time
 import math
 import aiohttp
+import aiosqlite
+import asqlite
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -32,6 +34,7 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
+from sqlitehandler import asqlite_pull_data
 
 #from "dateiname" import "name der funktion"
 
@@ -42,8 +45,36 @@ BETA_CLIENT_ID = os.getenv('Client_id_beta')
 DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
+MEMBERLOGCHANNELID = os.getenv('')
+DBLOGCHANNELID = os.getenv('')
 
-bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
+#bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
+
+
+class MyBot(commands.Bot):
+    def __init__(self):
+        super().__init__(intents=discord.Intents.all(), command_prefix='/')
+
+    async def setup_hook(self):
+        # Load the commands extension
+        print("Running setup tasks")
+        #connection = await aiosqlite.connect("./database/database.db")
+        self.pool = await asqlite.create_pool(database="./database/database.db")
+
+        one_minute_loop.start()
+        ten_minute_loop.start()
+        print("Running setup tasks completed")
+        
+bot = MyBot()
+
+@bot.command()
+async def asqlitetester(ctx):
+    #async with asqlite.Pool.acquire(bot.pool) as connection:
+        xp = await asqlite_pull_data(bot=bot, statement=f"SELECT xp FROM membertable WHERE guildid = {ctx.guild.id} AND memberid = {ctx.author.id}", data_to_return="xp")
+        #xpcursor = (await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (ctx.guild.id, ctx.author.id)))
+        #await ctx.reply(xpcursor)
+        #xp = (await xpcursor.fetchone())["xp"]
+        await ctx.reply(xp)
 
 #tracemalloc.start()
 handler = logging.FileHandler(filename='./database/discord.log', encoding='utf-8')
@@ -56,19 +87,18 @@ async def on_member_join(member):
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     await channel.send(embed=embed)
     #await sendwelcomemessage(member, bot)
-    new_member(member)
+    await new_member(member, bot)
     await memberjoin(bot, member)
     await add_autorole_2_user(member)
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
-    #print("One minute loop is running")
+    print("One minute loop is running")
     await new_minute_in_vc(bot)
 
 @tasks.loop(minutes=10)
 async def ten_minute_loop():
     #print("Ten minute loop is running")
-    await bot.change_presence(status=discord.Status.online, activity = discord.Game(f"Watching {bot.guilds} servers with {bot.users} members"))
     #await presenceupdate(bot)
     await check4upvotebotlist(bot, BOTLISTTOKEN)
 
@@ -173,7 +203,7 @@ async def ping(interaction: discord.Interaction):
     
 #setup:
 @bot.tree.command()
-async def setup(interaction:discord.Interaction):   
+async def serversetup(interaction:discord.Interaction):   
     await setupcommand(interaction)
 
 #@bot.tree.command()
@@ -235,7 +265,7 @@ async def removexp(interaction:discord.Interaction, xp: int, member:discord.Memb
 
 @bot.tree.command(name = "leaderboard")
 async def leaderboard(interaction:discord.Interaction):
-    await checkleaderboard(interaction)
+    await checkleaderboard(interaction, bot)
 
 @bot.tree.command()
 async def claim(interaction:discord.Interaction):
@@ -341,9 +371,9 @@ async def on_guild_join(guild):
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
-    for guild in bot.guilds:
-        if guild.name == DC_SERVER:
-            break
+    #for guild in bot.guilds:
+    #    if guild.name == DC_SERVER:
+    #        break
     #members = '\n - '.join([member.name for member in guild.members])
     print(f'{bot.user} is connected to the servers with these members:\n')
     guildcounter = 0
@@ -353,7 +383,7 @@ async def on_ready():
         database_checking_and_creating(guild.id)
         guildcounter = guildcounter + 1
         for member in guild.members:
-            new_member(member)
+            #new_member(member, connection)
             membercounter = membercounter + 1
             print(member)
     #print(f"These are all appcommands: \n{await bot.tree.sync()}")
@@ -361,24 +391,11 @@ async def on_ready():
         await message_back_online(bot)
     elif bot.user.id == 1183880930201448469: #betabot
         await beta_message_back_online(bot)
-
-@bot.event
-async def on_connect():    
-    one_minute_loop.start()
-    ten_minute_loop.start()
-#    print(f"Logged in as: {bot.user}")
-#    #await selfrolesaddview(user)
-#    one_minute_loop.start()
-#    ten_minute_loop.start()
-    
-@bot.event
-async def on_disconnect():
-    one_minute_loop.stop()
-    ten_minute_loop.stop()
+    await bot.change_presence(status=discord.Status.idle, activity = discord.Game(f"Watching {len(bot.guilds)} servers with {len(bot.users)} members"))
 
 #Do u want to debug?
 debug = None
-#debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
+debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
 if debug == "debug":
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
 else:

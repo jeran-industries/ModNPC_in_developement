@@ -81,3 +81,6 @@ async def check4upvotebotlist(bot, botlisttoken):
                         
     else:
         print(f"ERROR Botlist has answered with:{response.status_code}")
+
+async def check4permission():
+    pass

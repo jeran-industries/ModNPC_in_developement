@@ -23,7 +23,7 @@ async def create_selfrole(interaction, content, channeltopostin): #create a new 
             filename = './database/database.db'
             connection = sqlite3.connect(filename) #connect to polldatabase
             cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER, dropdown BOOL)")
             embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
             message = await channeltopostin.send(embed=embed)
             cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?, ?, ?)", (interaction.guild.id, message.id, False, None)) #write into the table the data
@@ -94,6 +94,7 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
                     await message.edit(embed=embed) #sending all the fields
                     await message.add_reaction(emoji) #adding the reaction to message
                     cursor.execute("INSERT INTO selfroleoptions VALUES (?, ?, ?, ?)", (messageid, emoji, role.id, description)) #write into the table the data
+                    await interaction.response.send_message("**SUCCESS** \nReactionrole was added.", ephemeral=True)
                 else:
                     await interaction.response.send_message("This reactionrole was already added.", ephemeral=True)
             else:

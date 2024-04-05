@@ -10,6 +10,11 @@ def database_checking_and_creating(guildid):
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
     cursor.execute("CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid BOOL, membergroup INTEGER)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS levelroles (guildid INTEGER, roleid INTEGER, level INTEGER, keeprole BOOL)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
+    cursor.execute("CREATE TABLE IF NOT EXISTS memberlog (guildid INTEGER, memberid INTEGER, timestamp TEXT, status TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
+    
     if (cursor.execute("SELECT * FROM guildsetup WHERE guildid = ?", (guildid,)).fetchone()) is None:
         cursor.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, False, None, False, None, False, False, None)) #saving data
 
@@ -29,7 +34,7 @@ def database_checking_and_creating(guildid):
         pass
 
     try:
-        cursor.execute("ALTER TABLE selfrolesdata ADD color str")
+        cursor.execute("ALTER TABLE selfrolesdata ADD color TEXT")
     except:
         pass
 

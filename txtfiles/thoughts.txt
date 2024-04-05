@@ -14,3 +14,5 @@ Setup:
 - Words that should be filtered
 
 If no permissions for Selfroles, create dmchannel and send request...
+
+check for permission "manage webhhoks" in botupdate

@@ -7,12 +7,13 @@ import discord
 import aiosqlite
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
+import asqlite
 
 #own modules:
 from membermanagement import new_member
 from link2id import channellink2channelid, channellink2guildid
 from checks import check4dm, check4dm_message
-
+from sqlitehandler import change_xp_by, asqlite_insert_data, asqlite_pull_data, asqlite_update_data
 
 async def new_message(bot, message): #make messagecounter bigger in json file bigger
     #v1:
@@ -37,90 +38,50 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
         #new_message(message)
     #v2:
     #cursor = connection.cursor()
+    member = message.author
     try:
-        guildid = message.guild.id
+        guildids = [0, message.guild.id]
     except AttributeError:
-        guildid = None
-    file_name = "./database/database.db"
-    connection = await aiosqlite.connect(file_name) #connect to polldatabase
-    await connection.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-    if guildid is not None:
-        messagessentguildcursor = await connection.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
-        messagessentguild = await messagessentguildcursor.fetchone()
-        messagessentguild = messagessentguild[0]
-        await messagessentguildcursor.close()
+        guildids = [0]
+    registeredmember = None
+    if member.bot == False:
+        registeredmember = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildids[1]} AND memberid = {member.id}", data_to_return="memberid")
+        if registeredmember is not None:
+            xptomodify=1
+            #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
+            for guildid in guildids:
+                messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+                await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
 
-        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, message.author.id))
-        xpguild = await xpguildcursor.fetchone()
-        xpguild = xpguild[0]
-        await xpguildcursor.close()
-
-        await connection.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentguild + 1, guildid, message.author.id))
-        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 1, guildid, message.author.id))
-        await new_level_ping(bot, message.author.id, guildid, xpguild, xpguild + 1)
-
-    messagessentglobalcursor = await connection.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
-    messagessentglobal = await messagessentglobalcursor.fetchone()
-    messagessentglobal = messagessentglobal[0]
-    await messagessentglobalcursor.close()
-
-    xpglobalcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, message.author.id))
-    xpglobal = await xpglobalcursor.fetchone()
-    xpglobal = xpglobal[0]
-    await xpglobalcursor.close()
-
-    await connection.execute("UPDATE membertable set messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessentglobal + 1, 0, message.author.id))
-    await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, message.author.id))
-    await connection.commit()
-    await connection.close()
+                xp = await change_xp_by(bot=bot, guildid=guildid, memberid=member.id, xptomodify=xptomodify)
+                
+                if guildid != 0:
+                    await new_level_ping(bot, member.id, guildid, xp, xp + xptomodify)
+        else:
+            await new_member(member, bot)    
 
 async def new_minute_in_vc(bot):
     for guild in bot.guilds:
-        guildid = guild.id
+        guildids = [0, guild.id]
         for vc in guild.voice_channels:
             for member in vc.members:
+                registeredmember = None
                 if member.bot == False:
-                    file_name = "./database/database.db"
-                    connection = await aiosqlite.connect(file_name) #connect to polldatabase
-                    await connection.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
-                    #print(f"{guildid} || {member.id}")
-
-                    membercursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-                    registeredmember = await membercursor.fetchone()
-                    await membercursor.close()
-
+                    registeredmember = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildids[1]} AND memberid = {member.id}", data_to_return="memberid")
                     if registeredmember is not None:
-                        
-                        voicetimeguildcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-                        voicetimeguild = await voicetimeguildcursor.fetchone()
-                        voicetimeguild = voicetimeguild[0]
-                        await voicetimeguildcursor.close()
+                        xptomodify=5
+                    #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
+                        for guildid in guildids:
+                            voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="voicetime")
 
-                        xpguildcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-                        xpguild = await xpguildcursor.fetchone()
-                        xpguild = xpguild[0]
-                        await xpguildcursor.close()
+                            await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = {voicetime + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
 
-                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeguild + 1, guildid, member.id))
-                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + 5, guildid, member.id))
-                        await new_level_ping(bot, member.id, guildid, xpguild, xpguild + 5)
+                            xp = await change_xp_by(bot=bot, guildid=guildid, memberid=member.id, xptomodify=xptomodify)
 
-                        voicetimeglobalcursor = await connection.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
-                        voicetimeglobal = await voicetimeglobalcursor.fetchone()
-                        voicetimeglobal = voicetimeglobal[0]
-                        await voicetimeglobalcursor.close()
-
-                        xpglobalcursor = await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (0, member.id))
-                        xpglobal = await xpglobalcursor.fetchone()
-                        xpglobal = xpglobal[0]
-                        await xpglobalcursor.close()
-
-                        await connection.execute("UPDATE membertable set voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetimeglobal + 1, 0, member.id))
-                        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpglobal + 1, 0, member.id))           
+                            if guildid != 0:
+                                await new_level_ping(bot, member.id, guildid, xp, xp + xptomodify)
                     else:
-                        new_member(member)
-                    await connection.commit()
-                    await connection.close()
+                        await new_member(member, bot)
 
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
@@ -143,35 +104,30 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
         guildid = member.guild.id
     except AttributeError:
         guildid = 0
-    file_name = "./database/database.db"
-    connection = sqlite3.connect(file_name) #connect to polldatabase
-    cursor = connection.cursor()
-    
-    cursor.execute("SELECT messagessent FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-    messagessentguild = next(cursor, [None])[0]
-    cursor.execute("SELECT voicetime FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-    voicetimeguild = next(cursor, [None])[0]
-    cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id))
-    xpguild = next(cursor, [None])[0]
-    level = math.floor((xpguild ** 0.5) / 5) #f(x) = x^0.5 / 5 => 5 * f(x) = x^0.5 => log5 * f(x) (0.5) = x
+
+    messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+    voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="voicetime")
+    xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="xp")
+
+    level = math.floor((xp ** 0.5) / 5) #f(x) = x^0.5 / 5 => 5 * f(x) = x^0.5 => log5 * f(x) (0.5) = x
     # Create the embed
-    embed = discord.Embed(title=f'Level {level}', description=f'{xpguild} XP', color=discord.Color.green())
+    embed = discord.Embed(title=f'Level {level}', description=f'{xp} XP', color=discord.Color.green())
     if member.bot:
         embed.set_author(name=member.display_name)
     else:
         embed.set_author(name=member.display_name, icon_url=member.avatar.url)
-    rank = await checkleaderboard(interaction, member.id)
+    rank = await checkleaderboard(interaction, bot, member.id)
     embed.add_field(name="Place:", value = f"#{rank}", inline=False)
-    embed.add_field(name="Voicetime:", value = str(voicetimeguild) + " minutes", inline=False)
-    embed.add_field(name="Messages sent:", value = str(messagessentguild) + " messages", inline=False)
+    embed.add_field(name="Voicetime:", value = str(voicetime) + " minutes", inline=False)
+    embed.add_field(name="Messages sent:", value = str(messagessent) + " messages", inline=False)
     embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
     
     # Send the embed
     #member.avatar.save("D:/Coding/Discordbot/ModNPC_in_developement/testfiles/rankcard/pfptest.png")
     await member.display_avatar.save(fp=f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
     #print(f"\n{file}\n")
-    rankcardgenerator(interaction.user.display_name, member.id, rank, xpguild, level, guildid)
-    file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
+    rankcardgenerator(interaction.user.display_name, member.id, rank, xp, level, guildid)
+    #file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
     #await interaction.followup.send(file = file)
     await interaction.followup.send(embed=embed)
 
@@ -225,38 +181,41 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
         oldlevel = 0
     if newlevel < 0:
         newlevel = 0
-    if oldlevel != newlevel and memberid != bot.user.id:
-        filename = "./database/database.db"
-        connection = sqlite3.connect(filename) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("SELECT levelingsystemstatus FROM guildsetup WHERE guildid = ?", (guildid,))
-        levelingsystemstatus = next(cursor, [None])[0]
-        if levelingsystemstatus == True:
-            cursor.execute("SELECT levelingpingmessagechannel FROM guildsetup WHERE guildid = ?", (guildid,))
-            channelid = next(cursor, [None])[0]
-            channel = await bot.fetch_channel(channelid)
-            if cursor.execute("SELECT * FROM levelroles WHERE guildid = ? AND level = ?", (guildid, newlevel)).fetchone() is not None:
-                cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ? AND level = ?", (guildid, newlevel))
-                roleid = next(cursor, [None])[0]
-                guild = bot.get_guild(guildid) #getting guild
-                member = guild.get_member(memberid) #getting member
-                role = discord.utils.get(guild.roles, id=roleid)
+    if oldlevel < newlevel and memberid != bot.user.id: #gets xp
+        guild = bot.get_guild(guildid) #getting guild
+        member = guild.get_member(memberid) #getting member
+        embed = discord.Embed(title=f'Congratulations!!!', description=f'{member.mention} reached level {newlevel}.', color=discord.Color.green())
+        numbers = list(range(oldlevel, newlevel+1))
+        for level in numbers:
+            roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid")
+            if roleid is not None:
+                role = guild.get_role(roleid)
                 await member.add_roles(role)
-                oldroles = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ? AND level < ? AND keeprole = 0", (guildid, newlevel)).fetchall()
-                if oldroles is not None:
-                    for oldrole in oldroles:
-                        await member.remove_roles(oldrole)
-                embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel} and got the role `{role.name}`.', color=discord.Color.green())
-            else:
-                embed = discord.Embed(title=f'Congratulations!!!', description=f'<@{memberid}> reached level {newlevel}.', color=discord.Color.green())
-            await channel.send(embed=embed)
-        connection.close()
+                embed.add_field(name="You achieved a new role:", value=role.name)
+        oldlevels = list(range(0, oldlevel))
+        for level in oldlevels:
+            status = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="keeprole")
+            if status == True:
+                roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid") 
+                role = guild.get_role(roleid)
+                await member.remove_roles(role)
+        channelid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="levelpingmessagechannel")
+        channel = await bot.fetch_channel(channelid)
+        await channel.send(embed=embed)
+
+    elif oldlevel > newlevel and memberid != bot.user.id: #looses xp
+        levels = list(range(newlevel, oldlevel))
+        for level in levels:
+            status = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="keeprole")
+            if status == True:
+                roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid") 
+                role = guild.get_role(roleid)
+                await member.remove_roles(role)
 
 async def getlevelrole(bot, memberid, guildid, level):
     filename = "./database/database.db"
     connection = sqlite3.connect(filename) #connect to polldatabase
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS levelroletable (guildid INTEGER, level INTEGER, roleid INTEGER, keepit BOOLEAN)")
     if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is not None:
         cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level))
         roleid = next(cursor, [None])[0]
@@ -270,7 +229,8 @@ async def getlevelrole(bot, memberid, guildid, level):
         return(role)
     else:
         return(None)
-    
+
+#moved to setupcommand    
 async def add_level_role_command(interaction, level, role, keepit):
     filename = "./database/database.db"
     connection = sqlite3.connect(filename) #connect to polldatabase
@@ -280,6 +240,7 @@ async def add_level_role_command(interaction, level, role, keepit):
         cursor.execute("INSERT INTO levelroletable VALUES (?, ?, ?, ?)", (guildid, level, role.id, keepit)) #write into the table the data
         await interaction.response.send_message(f"Success. The levelrole {role} was added to level {level}.", ephemeral=True)
 
+#moved to setupcommand    
 async def remove_level_role_command(interaction, level):
     filename = "./database/database.db"
     connection = sqlite3.connect(filename) #connect to polldatabase
@@ -291,69 +252,65 @@ async def remove_level_role_command(interaction, level):
     else:
         await interaction.response.send_message(f"Error. There isnt a levelrole at level {level}.", ephemeral=True)
 
-async def checkleaderboard(interaction, memberid = None):
-    filename = "./database/database.db"
-    async with aiosqlite.connect(filename) as connection:
-        cursor = await connection.cursor()
-        try:
-            guildid = interaction.guild.id
-        except AttributeError:
-            guildid = 0
-        if memberid is not None:
-            # Check rank for a specific member
-            await cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
-            row = await cursor.fetchone()
-            if row is not None:
-                xp = row[0]
-                # Count members with more XP than the searched member
-                await cursor.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ? AND xp > ?", (guildid, xp))
-                place = await cursor.fetchone()
-                return place[0] + 1
-            else:
-                return None  #Member not found
+async def checkleaderboard(interaction, bot, memberid = None):
+    try:
+        guildid = interaction.guild.id
+    except AttributeError:
+        guildid = 0
+    if memberid is not None:
+        # Check rank for a specific member
+        xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
+        if xp is not None:
+            # Count members with more XP than the searched member
+            place = await asqlite_pull_data(bot=bot, statement=f"SELECT COUNT(*) FROM membertable WHERE guildid = {guildid} AND xp > {xp}", data_to_return="memberid") + 1
         else:
-            # Get leaderboard for the guild
-            i = 1
-            max_xp = 99999999999999
-            embed = discord.Embed(title='Leaderboard:', color=discord.Color.green())
-            guild = interaction.guild
-            while i <= 10:
-                await cursor.execute("SELECT xp, memberid FROM membertable WHERE guildid = ? AND xp < ? ORDER BY xp DESC", (guildid, max_xp))
-                row = await cursor.fetchone()
-                if row:
-                    xp, memberid = row
-                    if guildid != 0:
-                        member = guild.get_member(memberid)
-                        memberdisplayname = member.display_name
-                        if member:
-                            embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
-                            i += 1
-                        max_xp = xp
-                    else:
-                        memberdisplayname = f"<@{memberid}>"
-                        if memberdisplayname:
-                            embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
-                            i += 1
-                        max_xp = xp
+            return None  #Member not found
+    else:
+        # Get leaderboard for the guild
+        i = 1
+        max_xp = 99999999999999
+        embed = discord.Embed(title='Leaderboard:', color=discord.Color.green())
+        guild = interaction.guild
+        while i <= 10:
+            #rowcursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND xp < ? ORDER BY xp DESC", (guildid, max_xp))
+            xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND xp < {max_xp} ORDER BY xp DESC", data_to_return="xp")
+            memberid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND xp < {max_xp} ORDER BY xp DESC", data_to_return="memberid")
+            if memberid:
+                if guildid != 0:
+                    member = guild.get_member(memberid)
+                    memberdisplayname = member.display_name
+                    if member:
+                        embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
+                        i += 1
+                    max_xp = xp
                 else:
-                    break  # No more results
-            await interaction.response.send_message(embed=embed)
+                    if memberdisplayname:
+                        embed.add_field(name=f"Place #{i}:", value=member.mention, inline=False)
+                        i += 1
+                    max_xp = xp
+            else:
+                break  # No more results
+        await interaction.response.send_message(embed=embed)
 
 async def addxp2user(interaction, bot, xptoadd, mentionedmember):
     member = interaction.user
     if await check4dm(interaction) == False and member.guild_permissions.administrator:
         if mentionedmember != None:
             member = mentionedmember
+        xp = await change_xp_by(bot=bot, guildid=interaction.guild.id, memberid=member.id, xptomodify=xptoadd)
+
+        await new_level_ping(bot, member.id, member.guild.id, xp, xp + xptoadd)
+        
         #v2:
-        filename = "./database/database.db"
-        connection = sqlite3.connect(filename) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
-        xpguild = next(cursor, [None])[0]
-        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + xptoadd, member.guild.id, member.id))
-        await new_level_ping(bot, member.id, member.guild.id, xpguild, xpguild + xptoadd)
-        connection.commit()
-        connection.close()
+        #filename = "./database/database.db"
+        #connection = sqlite3.connect(filename) #connect to polldatabase
+        #cursor = connection.cursor()
+        #cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (member.guild.id, member.id))
+        #xpguild = next(cursor, [None])[0]
+        #cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild + xptoadd, member.guild.id, member.id))
+        #await new_level_ping(bot, member.id, member.guild.id, xpguild, xpguild + xptoadd)
+        #connection.commit()
+        #connection.close()
         #v1:
         #file_name = "./Member/" + str(ctx.guild.id) + "/" + str(member_id) + ".json"
         #with open(file_name, 'r', encoding = 'utf-8') as f:
@@ -363,7 +320,7 @@ async def addxp2user(interaction, bot, xptoadd, mentionedmember):
         #with open(file_name, 'w', encoding = 'utf-8') as f:
         #    json.dump(data, f, indent = 1)
         #    f.close()
-        embed = discord.Embed(title=f'Success', description=f"You have added <@{member.id}> {xptoadd} xp and this member now has {xpguild + int(xptoadd)} xp.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"You have added <@{member.id}> {xptoadd} xp and this member now has {xp + int(xptoadd)} xp.", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)
     else:
         embed = discord.Embed(title=f'Error', description=f"You don't have the permissions to give anyone xp.", color=discord.Color.red())
@@ -374,16 +331,19 @@ async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
     if await check4dm(interaction) == False and member.guild_permissions.administrator:
         if mentionedmember != None:
             member = mentionedmember
+        xp = await change_xp_by(bot=bot, guildid=interaction.guild.id, memberid=member.id, xptomodify=(-xptoremove))
+
+        #await new_level_ping(bot, member.id, member.guild.id, xp, xp - xptoremove)
         #v2:
-        filename = "./database/database.db"
-        connection = sqlite3.connect(filename) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (interaction.guild.id, member.id))
-        xpguild = next(cursor, [None])[0]
-        cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild - xptoremove, interaction.guild.id, member.id))
-        await new_level_ping(bot, member.id, interaction.guild.id, xpguild, xpguild - xptoremove)
-        connection.commit()
-        connection.close()
+        #filename = "./database/database.db"
+        #connection = sqlite3.connect(filename) #connect to polldatabase
+        #cursor = connection.cursor()
+        #cursor.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (interaction.guild.id, member.id))
+        #xpguild = next(cursor, [None])[0]
+        #cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xpguild - xptoremove, interaction.guild.id, member.id))
+        #await new_level_ping(bot, member.id, interaction.guild.id, xpguild, xpguild - xptoremove)
+        #connection.commit()
+        #connection.close()
         #v1:
         #file_name = "./Member/" + str(ctx.guild.id) + "/" + str(member_id) + ".json"
         #with open(file_name, 'r', encoding = 'utf-8') as f:
@@ -393,7 +353,7 @@ async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
         #with open(file_name, 'w', encoding = 'utf-8') as f:
         #    json.dump(data, f, indent = 1)
         #    f.close()
-        embed = discord.Embed(title=f'Succes', description=f"You have removed from <@{member.id}> {xptoremove} xp and this member now has {xpguild - int(xptoremove)} xp.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"You have removed from <@{member.id}> {xptoremove} xp and this member now has {xp - int(xptoremove)} xp.", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)
     else:
         embed = discord.Embed(title=f'Error', description=f"You don't have the permissions to remove from anyone xp.", color=discord.Color.red())
@@ -432,9 +392,12 @@ async def claimcommand(interaction):
 def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     # Load the background image (replace with your own image)
     background_image_path = f"database/rankcards/backgrounds/{guildid}/{memberid}.png"
-    background_image = Image.open(background_image_path).convert("RGBA")
+    if os.path.exists(background_image_path):
+        background_image = Image.open(background_image_path).convert("RGBA")
+    else:
+        background_image = Image.open("database/rankcards/textures/background.png").convert("RGBA")
 
-    pfp = Image.open("./database/rankcards/profilepictures/1128824578848862228/945785058676072448.png").convert("RGBA")
+    pfp = Image.open(f"./database/rankcards/profilepictures/{guildid}/{memberid}.png").convert("RGBA")
     #pfp = avatarfile.convert("RGBA")
     #pfp = pfp.resize((480, 480))
     pfp = ImageOps.fit(pfp, (480, 480), method=Image.Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))

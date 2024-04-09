@@ -3,5 +3,5 @@ discord.py==2.3.2
 discord.ext.context==0.1.8
 aiosqlite==0.20.0
 requests==2.31.0
-pillow==10.2.0
+pillow==10.3.0
 asqlite==0.0.0 #asqlite is a libary not available via pip, to use it install it from this link: https://github.com/Rapptz/asqlite/

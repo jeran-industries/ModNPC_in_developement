@@ -278,7 +278,14 @@ async def getlogchannel(bot, guildid):
     logchannelid = await logchannelidcursor.fetchone()
     logchannelid = logchannelid[0]
     if logchannelid is not None:
-        logchannel = await bot.fetch_channel(logchannelid)
+        try:
+            logchannel = await bot.fetch_channel(logchannelid)
+        except:
+            guild = await bot.fetch_guild(guildid)
+            dmembed = discord.Embed(description="Due to problems the bot detected while trying to log, we wanted you to remember setting the permissions for the logchannel right.\nPlease activate for the bot these permissions: \n`view channel`\n`manage webhooks`\n`send messages`\n`send messages in threads`\n`create public threads` or the guildpermission `administrator`")
+            dmchannel = await guild.owner.create_dm()
+            await dmchannel.send(dmembed)
+            logchannel = None
     else:
         logchannel = None
     await connection.close()

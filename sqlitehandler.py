@@ -24,3 +24,8 @@ async def asqlite_insert_data(bot, statement):
     async with bot.pool.acquire() as connection:
         await connection.execute(statement)
         await connection.commit()
+
+async def asqlite_get_counter(bot, statement):
+    async with bot.pool.acquire() as connection:
+        counter = await connection.execute(statement)
+        return(counter)

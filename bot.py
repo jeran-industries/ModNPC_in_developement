@@ -69,12 +69,15 @@ bot = MyBot()
 
 @bot.command()
 async def asqlitetester(ctx):
-    #async with asqlite.Pool.acquire(bot.pool) as connection:
-        xp = await asqlite_pull_data(bot=bot, statement=f"SELECT xp FROM membertable WHERE guildid = {ctx.guild.id} AND memberid = {ctx.author.id}", data_to_return="xp")
+    async with asqlite.Pool.acquire(bot.pool) as connection:
+        #xp = await asqlite_pull_data(bot=bot, statement=f"SELECT xp FROM membertable WHERE guildid = {ctx.guild.id} AND memberid = {ctx.author.id}", data_to_return="xp")
         #xpcursor = (await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (ctx.guild.id, ctx.author.id)))
         #await ctx.reply(xpcursor)
         #xp = (await xpcursor.fetchone())["xp"]
-        await ctx.reply(xp)
+        countercursor = await connection.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ?", (ctx.guild.id))
+        counter = await countercursor.fetchone()
+        counter = counter[0]
+        await ctx.reply(counter)
 
 #tracemalloc.start()
 handler = logging.FileHandler(filename='./database/discord.log', encoding='utf-8')
@@ -203,7 +206,7 @@ async def ping(interaction: discord.Interaction):
     
 #setup:
 @bot.tree.command()
-async def serversetup(interaction:discord.Interaction):   
+async def setup(interaction:discord.Interaction):   
     await setupcommand(interaction)
 
 #@bot.tree.command()

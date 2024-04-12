@@ -494,6 +494,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
         guild = interaction.guild
+        bot = interaction.client
         #try:
         file_name = "./database/database.db"
         connection = sqlite3.connect(file_name) #connect to polldatabase
@@ -508,14 +509,14 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
 #Logs:
 async def logsetup(interaction: discord.Interaction):
     member = interaction.user
-    await interaction.response.send_message("This part isnt completly programmed yet and the setupmenu for logging is in beta. This is why some buttons are deactivated.", ephemeral = True)
+    await interaction.response.send_message("This part isnt completly programmed yet and the setupmenu for logging is in beta. This is why some buttons are deactivated.", view=LogSetupView(), ephemeral = True)
 
 class LogSetupView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Activate", custom_id="LogActivate")
-    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
+    async def activate(self, interaction: discord.Interaction, button: discord.ui.button):
         connection = await aiosqlite.connect("./database/database.db")
         guildid = interaction.guild.id
         logchannelidcursor = await connection.execute('SELECT logchannelid FROM guildsetup WHERE guildid = ?', (guildid,))
@@ -528,8 +529,8 @@ class LogSetupView(discord.ui.View):
         else:
             await interaction.response.send_message(f"Use first the button: `Set the logchannel`", ephemeral = True)        
 
-    @discord.ui.button(label="Deactivate", custom_id="Logdeactivate")
-    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
+    @discord.ui.button(label="Deactivate", custom_id="LogDeactivate")
+    async def deactivate(self, interaction: discord.Interaction, button: discord.ui.button):
         connection = await aiosqlite.connect("./database/database.db")
         guildid = interaction.guild.id
         await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (0, guildid))
@@ -538,13 +539,14 @@ class LogSetupView(discord.ui.View):
         await interaction.response.send_message(f"You deactivated the logging", ephemeral = True)
 
     @discord.ui.button(label="Set the logchannel", custom_id="LogChannelSet")
-    async def test(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Use this command to set the logging channel: `/log_set_channel`", ephemeral = True)  
+    async def logchannelselect(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(view=LogChannelSelect(), ephemeral = True)
+        #await interaction.response.send_message(f"Use this command to set the logging channel: `/log_set_channel`", ephemeral = True)  
 
 class LogChannelSelect(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(WelcomemessageChannelSelectMenu())
+        self.add_item(LogChannelSelectMenu())
 
 class LogChannelSelectMenu(discord.ui.ChannelSelect):
     def __init__(self, custom_id = "ChannelSelectLog"):
@@ -552,16 +554,32 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
 
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
-        channel = await channel.fetch() #converts APPCOMMANDCHANNEL to GUILDCHANNEL
-        member = interaction.user
-        connection = await aiosqlite.connect("./database/database.db")
-        guildid = interaction.guild.id
-        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
-        await connection.commit()
-        await connection.close()
-        embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
-        await channel.send(embed = embed)
-        embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.")
+        try:
+            channel = await channel.fetch()
+            #bot = interaction.client.user
+            #permissions = interaction.app_permissions.view_channel
+            #print(f"These are the permissions: {permissions}")
+            testembed = discord.Embed(title = f"This is a testmessage.", description = f"This action was made by {member.mention} ||{member.id}||.")
+            try:
+                testmessage = await channel.send(embed=testembed)
+                try:
+                    await testmessage.create_thread(name="testhread")
+                    member = interaction.user
+                    connection = await aiosqlite.connect("./database/database.db")
+                    guildid = interaction.guild.id
+                    await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
+                    await connection.commit()
+                    await connection.close()
+                    embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
+                    await channel.send(embed = embed)
+                    embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.\nI always recommand activating the permission: `administrator`") 
+                except :
+                    embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please check this permissions: \n`create public threads`")
+                await testmessage.delete()
+            except:
+                embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please activate these permissions: \n`send messages`\n`send messages in threads`\n`create public threads`")
+        except:
+            embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please activate these permissions: \n`view channel`\n`manage webhooks`\n`send messages`\n`send messages in threads`\n`create public threads`")
         await interaction.response.send_message(embed = embed, ephemeral = True)
 
 #Welcomemessages:

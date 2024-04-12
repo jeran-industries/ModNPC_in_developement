@@ -11,7 +11,7 @@ import asqlite
 
 #own modules:
 from membermanagement import new_member
-from link2id import channellink2channelid, channellink2guildid
+from link2id import channellink2channelid, channellink2guildid, link2channelid, link2messageid
 from checks import check4dm, check4dm_message
 from sqlitehandler import change_xp_by, asqlite_insert_data, asqlite_pull_data, asqlite_update_data
 
@@ -51,6 +51,8 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
             #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
             for guildid in guildids:
                 messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+                if messagessent is None:
+                    messagessent = 0
                 await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
 
                 xp = await change_xp_by(bot=bot, guildid=guildid, memberid=member.id, xptomodify=xptomodify)
@@ -116,8 +118,8 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
         embed.set_author(name=member.display_name)
     else:
         embed.set_author(name=member.display_name, icon_url=member.avatar.url)
-    #rank = await checkleaderboard(interaction, bot, member.id)
-    #embed.add_field(name="Place:", value = f"#{rank}", inline=False)
+    rank = await checkleaderboard(interaction, bot, member.id)
+    embed.add_field(name="Place:", value = f"#{rank}", inline=False)
     embed.add_field(name="Voicetime:", value = str(voicetime) + " minutes", inline=False)
     embed.add_field(name="Messages sent:", value = str(messagessent) + " messages", inline=False)
     embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
@@ -127,9 +129,9 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     await member.display_avatar.save(fp=f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
     #print(f"\n{file}\n")
     rankcardgenerator(interaction.user.display_name, member.id, rank, xp, level, guildid)
-    #file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
-    #await interaction.followup.send(file = file)
-    await interaction.followup.send(embed=embed)
+    file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
+    await interaction.followup.send(file = file, view=rankcardbuttons(bot, owner=member, rankcard=file))
+    #await interaction.followup.send(embed=embed)
 
     #v1:
     #server_id = ctx.guild.id
@@ -264,7 +266,10 @@ async def checkleaderboard(interaction, bot, memberid = None):
         xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
         if xp is not None:
             # Count members with more XP than the searched member
-            place = await asqlite_pull_data(bot=bot, statement=f"SELECT COUNT(*) FROM membertable WHERE guildid = {guildid} AND xp > {xp}", data_to_return="memberid") + 1
+            async with bot.pool.acquire() as connection:
+                countercursor = await connection.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ? AND xp > ?", (interaction.guild.id, xp))
+                counter = await countercursor.fetchone()
+                place = counter[0]
             return(place)
         else:
             return None  #Member not found
@@ -394,11 +399,12 @@ async def claimcommand(interaction):
 
 def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     # Load the background image (replace with your own image)
-    background_image_path = f"database/rankcards/backgrounds/{guildid}/{memberid}.png"
+    background_image_path = f"database/rankcards/backgrounds/{guildid}/{memberid}.png" #2400x600
     if os.path.exists(background_image_path):
         background_image = Image.open(background_image_path).convert("RGBA")
     else:
-        background_image = Image.open("database/rankcards/textures/background.png").convert("RGBA")
+        background_image = Image.new('RGB', (2400, 600), color='black')
+        background_image.putalpha(0)
 
     pfp = Image.open(f"./database/rankcards/profilepictures/{guildid}/{memberid}.png").convert("RGBA")
     #pfp = avatarfile.convert("RGBA")
@@ -487,3 +493,92 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     draw.text(total_xp_position, f"Total XP: {xp}", fill="white", font=font)
 
     background_image.save(f"./database/rankcards/generated/{guildid}/{memberid}.png")
+
+class rankcardbuttons(discord.ui.View):
+    def __init__(self, bot, owner, rankcard):
+        self.bot = bot
+        self.owner = owner
+        self.rankcard = rankcard
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Properties", custom_id="properties", disabled=True)
+    async def properties(self, interaction: discord.Interaction, button: discord.ui.button):
+        member = interaction.user
+
+    @discord.ui.button(label="Change your background", custom_id="changeabackground")
+    async def changeabackgroundcallback(self, interaction: discord.Interaction, button: discord.ui.button):
+        member = interaction.user
+        guild = interaction.guild
+        if member.dm_channel is None:
+            dmchannel = await member.create_dm()
+        dmembed = discord.Embed(description="Please upload a picture and interact afterwards with the buttons.")
+        dmembed.set_footer(text="Please note, that NSFW and other problematic content will be deleted and will lead to a report to the discord safety team.", icon_url=None)
+        await dmchannel.send(embed=dmembed, view=dmrankcardbuttons(guild))
+        embed = discord.Embed(description=f"For updating your rankcard background, I created a directe message with you: {dmchannel.jump_url}. Please upload in the next 5 minutes one in {dmchannel.jump_url} and provide the message link in the popup window. After that the interaction will time out.")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @discord.ui.button(label="Report", custom_id="report", style=discord.ButtonStyle.red, emoji="📢")
+    async def reportcallback(self, interaction: discord.Interaction, button: discord.ui.button):
+        reportchannel = 1226272957106491462
+        member = interaction.user
+        guild = interaction.guild
+        bot = self.bot
+        owner = self.owner
+        rankcard = self.rankcard
+        if member.id != owner.id:
+            channel = bot.get_channel(reportchannel)
+            file = discord.File(f"./database/rankcards/generated/{guild.id}/{owner.id}.png")
+            embed = discord.Embed(title="New report about background!", description=f"{member.name} ||{member.id}|| just reported the rankcard of {owner.name} in the server `{guild.name}`.")
+            await channel.send(embed = embed)
+            await channel.send(file = file)
+            reportembed = discord.Embed(description=f"Thanks for your report and making this server and discord a better place.")
+            await interaction.response.send_message(embed=reportembed, ephemeral=True)
+        else:
+            errorembed = discord.Embed(description=f"You can't report your own rankcard.")
+            await interaction.response.send_message(embed=errorembed, ephemeral=True)
+
+class dmrankcardbuttons(discord.ui.View):
+    def __init__(self, guild):
+        self.guild = guild
+        super().__init__(timeout=300)
+
+    @discord.ui.button(label="Change background", custom_id="changeabackground")
+    async def uploadabackground(self, interaction: discord.Interaction, button: discord.ui.button):
+        member = interaction.user
+        await interaction.response.send_modal(modalchangebackground())
+
+    @discord.ui.button(label="Delete background", custom_id="deleteabackground")
+    async def deleteabackground(self, interaction: discord.Interaction, button: discord.ui.button):
+        member = interaction.user
+
+class modalchangebackground(discord.ui.Modal, title="Change your background"):
+    imagelink = discord.ui.TextInput(label="Enter the link to your new background.", style=discord.TextStyle.short)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        imagelink = self.imagelink
+        member = interaction.user
+        print(imagelink)
+        messageid = link2messageid(imagelink)
+        message = await member.fetch_message(messageid)
+
+        for attachment in message.attachments:
+            if attachment is None:
+                errorembed = discord.Embed(description=f"This message doesnt have any images.")
+                await interaction.response.send_message(embed=errorembed)
+                return()
+            else:
+                await interaction.response.send_message(f"Somebody sended that things in: {imagelink}, {attachment.content_type}")
+                break
+
+        background_image_width = background_image.width
+        background_image_height = background_image.height
+        if background_image_width == 2400 and background_image_height == 600:
+            pass
+        elif background_image_width / background_image_height == 4:
+            background_image = background_image.resize((2400, 600))
+        else:
+            cropleftright = (background_image_width-2400) / 2
+            croptopbottom = (background_image_height-600) / 2
+            background_image = background_image.crop((cropleftright, croptopbottom, cropleftright, croptopbottom))
+            background_image = background_image.resize((2400, 600))
+        

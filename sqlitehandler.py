@@ -5,6 +5,10 @@ async def change_xp_by(bot, guildid, memberid, xptomodify):
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = {xp + xptomodify} WHERE guildid = {guildid} AND memberid = {memberid}")
     return(xp)
 
+async def get_logchannelid(bot, guildid):
+    logchannelid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logchannelid")
+    return(logchannelid)
+
 async def asqlite_pull_data(bot, statement, data_to_return):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute(statement)

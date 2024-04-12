@@ -7,22 +7,25 @@ import aiosqlite
 
 #own modules:
 from automod import automod
+from sqlitehandler import get_logchannelid
 
-async def setlogchannelcommand(interaction, channel):
-    member = interaction.user
-    if member.guild_permissions.administrator:
-        connection = await aiosqlite.connect("./database/database.db")
-        guildid = interaction.guild.id
-        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
-        await connection.commit()
-        await connection.close()
-        embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
-        await channel.send(embed = embed)
-        embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.")
-        await interaction.response.send_message(embed = embed, ephemeral = True)
-    else:
-        embed = discord.Embed(title = f"*ERROR*", description = f"You dont have administrator rights.")
-        await interaction.response.send_message(embed = embed, ephemeral = True)
+#moved to setupcommand:
+
+#async def setlogchannelcommand(interaction, channel):
+#    member = interaction.user
+#    if member.guild_permissions.administrator:
+#        connection = await aiosqlite.connect("./database/database.db")
+#        guildid = interaction.guild.id
+#        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
+#        await connection.commit()
+#        await connection.close()
+#        embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
+#        await channel.send(embed = embed)
+#        embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.")
+#        await interaction.response.send_message(embed = embed, ephemeral = True)
+#    else:
+#        embed = discord.Embed(title = f"*ERROR*", description = f"You dont have administrator rights.")
+#        await interaction.response.send_message(embed = embed, ephemeral = True)
 
 #messages:
 async def messagesenteventlog(bot, message):
@@ -123,7 +126,7 @@ async def messagedeletedeventlog(bot, message):
     #        json.dump(data, f, indent=1) #writing data into json-file
     #        f.close()
     #v2:
-    write_into_log(eventtype, message.author.id, message.guild.id, message.channel.id, message.id, message.content, str(message.created_at))
+    #write_into_log(eventtype, message.author.id, message.guild.id, message.channel.id, message.id, message.content, str(message.created_at))
 
 def write_into_log(eventtype, memberid, guildid, channelid, messageid, content, timestamp):
     file_name = "./database/database.db"
@@ -273,10 +276,7 @@ async def loginfosandsending(embed, member, bot, logchannel, message1 = None, me
                         await threadmessage2.pin()
 
 async def getlogchannel(bot, guildid):
-    connection = await aiosqlite.connect("./database/database.db")
-    logchannelidcursor = await connection.execute('SELECT logchannelid FROM guildsetup WHERE guildid = ?', (guildid,))
-    logchannelid = await logchannelidcursor.fetchone()
-    logchannelid = logchannelid[0]
+    logchannelid = get_logchannelid(bot=bot, guildid=guildid)
     if logchannelid is not None:
         try:
             logchannel = await bot.fetch_channel(logchannelid)
@@ -288,5 +288,4 @@ async def getlogchannel(bot, guildid):
             logchannel = None
     else:
         logchannel = None
-    await connection.close()
     return(logchannel)

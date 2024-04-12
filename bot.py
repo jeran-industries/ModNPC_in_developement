@@ -92,7 +92,7 @@ async def on_member_join(member):
     #await sendwelcomemessage(member, bot)
     await new_member(member, bot)
     await memberjoin(bot, member)
-    await add_autorole_2_user(member)
+    await add_autorole_2_user(bot=bot, member=member)
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():

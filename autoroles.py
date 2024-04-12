@@ -1,41 +1,35 @@
 import discord
-import aiosqlite
 import asyncio
 
 #own modules:
 from checks import check4dm, check4role
+from sqlitehandler import get_autoroles
 
-async def add_autorole_2_user(member):
+async def add_autorole_2_user(bot, member):
     roles = []
     guild = member.guild
     guildid = guild.id
-    connection = await aiosqlite.connect("./database/database.db")
 
     #print("\n Im here \n")
 
     ##all(0) usergroups: bot(1) and humanusers(2)
     membergroup = 0
-    roleidsalluserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guildid, membergroup))
-    roleidsallusers = await roleidsalluserscursor.fetchall()
-    await roleidsalluserscursor.close()
-    roles = await getroles(roles=roles, roleids=roleidsallusers, guild=guild, member=member)
+    await membergrouproleassignement(guild, membergroup, member, bot)
 
     #botusers:
     if member.bot == True:
-        membergroup=1
-        await membergrouproleassignement(connection, guild, membergroup, member)
+        membergroup = 1
+        await membergrouproleassignement(guild, membergroup, member, bot)
 
     #humanusers:
     else:
-        membergroup=2
-        await membergrouproleassignement(connection, guild, membergroup, member)
+        membergroup = 2
+        await membergrouproleassignement(guild, membergroup, member, bot)
 
-    await connection.close()
+async def membergrouproleassignement(guild, membergroup, member, bot):
 
-async def membergrouproleassignement(connection, guild, membergroup, member):
-    roleidsmembergroupuserscursor = await connection.execute('SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?', (guild.id, membergroup))
-    roleidsmembergroupusers = await roleidsmembergroupuserscursor.fetchall()
-    await roleidsmembergroupuserscursor.close()
+    roleidsmembergroupusers = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
+
     roles = []
     if roleidsmembergroupusers != []:
         roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)

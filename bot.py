@@ -21,7 +21,7 @@ import asqlite
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
 from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu, selfrolesaddview
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
-from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, setlevelpingchannelcommand, add_level_role_command, remove_level_role_command, claimcommand
+from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, claimcommand
 from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate, memberjoin, memberleave, memberupdate, memberban, memberunban, setlogchannelcommand, invitecreate, invitedelete
 from membermanagement import new_member
 from dice import throwdicecommand

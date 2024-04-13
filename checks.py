@@ -5,6 +5,7 @@ import requests
 import json
 from datetime import datetime
 
+from sqlitehandler import update_lastupvote, change_xp_by, get_lastupvote
 
 def check4premium(guildid):
     pass
@@ -55,29 +56,18 @@ async def check4upvotebotlist(bot, botlisttoken):
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         botlistupvotes = response.json()["upvotes"]
-        connection = await aiosqlite.connect("./database/database.db")
         for botlistupvote in botlistupvotes:
             memberid = botlistupvote["user_id"]
-            print(memberid)
-            cursor = await connection.execute('SELECT last_upvote FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
-            timelastupvote = await cursor.fetchone()
+
+            timelastupvote = await get_lastupvote(bot=bot, guildid=0, memberid=memberid)
+
             if timelastupvote is not None:
-                print(timelastupvote)
-                timelastupvote = timelastupvote[0]
-                if timelastupvote == None:
-                    timelastupvote = 0
                 time = int(round((datetime.now() - datetime(1970, 1, 1)).total_seconds()))
                 if time-timelastupvote >= 43200:
-                    print("Im here")
-                    await connection.execute("UPDATE membertable set last_upvote = ? WHERE guildid = ? AND memberid = ?", (time, 0, memberid))
-                    xpcursor = await connection.execute('SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
-                    xp = await xpcursor.fetchone()
-                    xp = xp[0]        
-                    await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xp + 100, 0, memberid))
-                    await xpcursor.close()
-            await cursor.close()
-        await connection.commit()
-        await connection.close()
+
+                    await update_lastupvote(bot=bot, time=time, guildid=0, memberid=memberid)
+
+                    await change_xp_by(bot=bot, guildid=0, memberid=memberid, xptomodify=100)
                         
     else:
         print(f"ERROR Botlist has answered with:{response.status_code}")

@@ -1,19 +1,14 @@
 import os
-import json
 import math
-import io
-import sqlite3
 import discord
-import aiosqlite
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
-import asqlite
 
 #own modules:
 from membermanagement import new_member
 from link2id import channellink2channelid, channellink2guildid, link2channelid, link2messageid
 from checks import check4dm, check4dm_message
-from sqlitehandler import change_xp_by, asqlite_insert_data, asqlite_pull_data, asqlite_update_data
+from sqlitehandler import change_xp_by, get_lastupvote, update_voicetime, update_lastupvote, asqlite_insert_data, asqlite_pull_data, asqlite_update_data
 
 async def new_message(bot, message): #make messagecounter bigger in json file bigger
     #v1:
@@ -74,9 +69,7 @@ async def new_minute_in_vc(bot):
                         xptomodify=5
                     #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
                         for guildid in guildids:
-                            voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="voicetime")
-
-                            await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = {voicetime + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
+                            await update_voicetime(bot=bot, guildid=guildid, memberid=member.id)
 
                             xp = await change_xp_by(bot=bot, guildid=guildid, memberid=member.id, xptomodify=xptomodify)
 
@@ -161,21 +154,6 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     # Send the embed
     #await ctx.send(embed=embed)
 
-async def setlevelpingchannelcommand(interaction, channel):
-        if interaction.user.guild_permissions.administrator:
-            filename = "./database/database.db"
-            connection = sqlite3.connect(filename) #connect to polldatabase
-            cursor = connection.cursor()
-            if (cursor.execute("SELECT * FROM guildsetup WHERE guildid = ?", (interaction.guild.id,)).fetchone()) is not None:
-                cursor.execute("UPDATE guildsetup set levelingsystemstatus = ? AND levelingpingmessagechannel = ? WHERE guildid = ?", (True, channel.id, interaction.guild.id))
-                await interaction.response.send_message(f"The level ping was set in {channel.name}", ephemeral = True)
-                connection.commit()
-                connection.close()
-            else:
-                await interaction.response.send_message("There is an error. Please go on our supportserver and post your problem in the forum. The developer will help you. \n ERRORCODE: 000001", ephemeral = True)
-        else:
-            await interaction.response.send_message("You don't have the rights to set the levelpingchannel.", ephemeral = True)
-
 async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called every time a member get xp
     oldlevel = math.floor((xpbefore ** 0.5) / 5)
     newlevel = math.floor(((xpafter) ** 0.5) / 5)
@@ -215,46 +193,6 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
                 roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid") 
                 role = guild.get_role(roleid)
                 await member.remove_roles(role)
-
-async def getlevelrole(bot, memberid, guildid, level):
-    filename = "./database/database.db"
-    connection = sqlite3.connect(filename) #connect to polldatabase
-    cursor = connection.cursor()
-    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is not None:
-        cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level))
-        roleid = next(cursor, [None])[0]
-        guild = bot.get_guild(guildid) #getting guild
-        member = guild.get_member(memberid) #getting member
-        role = discord.utils.get(guild.roles, id=roleid)
-        await member.add_roles(role)
-        roles = cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level < ? AND keepit = 0", (guildid, level)).fetchall()
-        if roles != None:
-            await member.remove_roles(roles)
-        return(role)
-    else:
-        return(None)
-
-#moved to setupcommand    
-async def add_level_role_command(interaction, level, role, keepit):
-    filename = "./database/database.db"
-    connection = sqlite3.connect(filename) #connect to polldatabase
-    cursor = connection.cursor()
-    guildid = interaction.guild.id
-    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is None:
-        cursor.execute("INSERT INTO levelroletable VALUES (?, ?, ?, ?)", (guildid, level, role.id, keepit)) #write into the table the data
-        await interaction.response.send_message(f"Success. The levelrole {role} was added to level {level}.", ephemeral=True)
-
-#moved to setupcommand    
-async def remove_level_role_command(interaction, level):
-    filename = "./database/database.db"
-    connection = sqlite3.connect(filename) #connect to polldatabase
-    cursor = connection.cursor()
-    guildid = interaction.guild.id
-    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is not None:
-        cursor.execute("DELETE FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level))
-        await interaction.response.send_message(f"Success. The levelrole was removed from level {level}.", ephemeral=True)
-    else:
-        await interaction.response.send_message(f"Error. There isnt a levelrole at level {level}.", ephemeral=True)
 
 async def checkleaderboard(interaction, bot, memberid = None):
     try:
@@ -368,32 +306,21 @@ async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
         await interaction.response.send_message(embed=embed)
 
 async def claimcommand(interaction):
-    connection = await aiosqlite.connect("./database/database.db")
     memberid = interaction.user.id
     guildid = interaction.guild.id
-    lastupvotecursor = await connection.execute('SELECT last_upvote FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
-    lastupvote = await lastupvotecursor.fetchone()
-    lastupvote = lastupvote[0]
+    bot = interaction.client.user
+    lastupvote = await get_lastupvote(bot=bot, guildid=0, memberid=memberid)
     if lastupvote == None:
         lastupvote = 0
-    guildupvotecursor = await connection.execute('SELECT last_upvote FROM membertable WHERE guildid = ? AND memberid = ?', (guildid, memberid))
-    guildupvote = await guildupvotecursor.fetchone()
-    guildupvote = guildupvote[0]
+    guildupvote = await get_lastupvote(bot=bot, guildid=guildid, memberid=memberid)
     if guildupvote == None:
         guildupvote = 0
     now = datetime.now()
     time = int(round((now - datetime(1970, 1, 1)).total_seconds()))
     if guildupvote <= lastupvote:
-        await connection.execute("UPDATE membertable set last_upvote = ? WHERE guildid = ? AND memberid = ?", (time, guildid, memberid))
-        xpcursor = await connection.execute('SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?', (0, memberid))
-        xp = await xpcursor.fetchone()
-        xp = xp[0]
-        await connection.execute("UPDATE membertable set xp = ? WHERE guildid = ? AND memberid = ?", (xp + 100, guildid, memberid))
-        await xpcursor.close()
-    await lastupvotecursor.close()
-    await guildupvotecursor.close()
-    await connection.commit()
-    await connection.close()
+        await update_lastupvote(bot=bot, time=time, guildid=guildid, memberid=memberid)
+        await change_xp_by(bot=bot, guildid=guildid, memberid=memberid, xptomodify=100)
+
     embed = discord.Embed(title="Thanks for upvoting!!!", description="Here is the link to upvote: https://discordbotlist.com/bots/modnpc/upvote")
     await interaction.response.send_message(embed=embed)
 
@@ -581,4 +508,59 @@ class modalchangebackground(discord.ui.Modal, title="Change your background"):
             croptopbottom = (background_image_height-600) / 2
             background_image = background_image.crop((cropleftright, croptopbottom, cropleftright, croptopbottom))
             background_image = background_image.resize((2400, 600))
-        
+
+#async def setlevelpingchannelcommand(interaction, channel):
+#        if interaction.user.guild_permissions.administrator:
+#            filename = "./database/database.db"
+#            connection = sqlite3.connect(filename) #connect to polldatabase
+#            cursor = connection.cursor()
+#            if (cursor.execute("SELECT * FROM guildsetup WHERE guildid = ?", (interaction.guild.id,)).fetchone()) is not None:
+#                cursor.execute("UPDATE guildsetup set levelingsystemstatus = ? AND levelingpingmessagechannel = ? WHERE guildid = ?", (True, channel.id, interaction.guild.id))
+#                await interaction.response.send_message(f"The level ping was set in {channel.name}", ephemeral = True)
+#                connection.commit()
+#                connection.close()
+#            else:
+#                await interaction.response.send_message("There is an error. Please go on our supportserver and post your problem in the forum. The developer will help you. \n ERRORCODE: 000001", ephemeral = True)
+#        else:
+#            await interaction.response.send_message("You don't have the rights to set the levelpingchannel.", ephemeral = True)
+
+#moved to setup command       
+#async def getlevelrole(bot, memberid, guildid, level):
+#    filename = "./database/database.db"
+#    connection = sqlite3.connect(filename) #connect to polldatabase
+#    cursor = connection.cursor()
+#    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is not None:
+#        cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level))
+#        roleid = next(cursor, [None])[0]
+#        guild = bot.get_guild(guildid) #getting guild
+#        member = guild.get_member(memberid) #getting member
+#        role = discord.utils.get(guild.roles, id=roleid)
+#        await member.add_roles(role)
+#        roles = cursor.execute("SELECT roleid FROM levelroletable WHERE guildid = ? AND level < ? AND keepit = 0", (guildid, level)).fetchall()
+#        if roles != None:
+#            await member.remove_roles(roles)
+#        return(role)
+#    else:
+#        return(None)
+
+#moved to setupcommand    
+#async def add_level_role_command(interaction, level, role, keepit):
+#    filename = "./database/database.db"
+#    connection = sqlite3.connect(filename) #connect to polldatabase
+#    cursor = connection.cursor()
+#    guildid = interaction.guild.id
+#    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is None:
+#        cursor.execute("INSERT INTO levelroletable VALUES (?, ?, ?, ?)", (guildid, level, role.id, keepit)) #write into the table the data
+#        await interaction.response.send_message(f"Success. The levelrole {role} was added to level {level}.", ephemeral=True)
+
+#moved to setupcommand    
+#async def remove_level_role_command(interaction, level):
+#    filename = "./database/database.db"
+#    connection = sqlite3.connect(filename) #connect to polldatabase
+#    cursor = connection.cursor()
+#    guildid = interaction.guild.id
+#    if cursor.execute("SELECT * FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level)).fetchone() is not None:
+#        cursor.execute("DELETE FROM levelroletable WHERE guildid = ? AND level = ?", (guildid, level))
+#        await interaction.response.send_message(f"Success. The levelrole was removed from level {level}.", ephemeral=True)
+#    else:
+#        await interaction.response.send_message(f"Error. There isnt a levelrole at level {level}.", ephemeral=True)

@@ -34,7 +34,6 @@ async def membergrouproleassignement(guild, membergroup, member, bot):
     if roleidsmembergroupusers != []:
         roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)
 
-
 async def addrole2allmembercommand(interaction, role, membergroup):
     if await check4dm(interaction) == False:
         guild = interaction.guild

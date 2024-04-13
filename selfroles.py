@@ -15,21 +15,22 @@ import aiosqlite
 from emoji2role import emoji2role
 from link2id import link2serverid, link2channelid, link2messageid
 from checks import check4dm
+from sqlitehandler import insert_into_selfroles, insert_into_selfrole_options, get_selfrole_roleid, check_4_selfrole
 
 async def create_selfrole(interaction, content, channeltopostin): #create a new reactionrole
     if await check4dm(interaction) == False:
         member = interaction.user
+        bot = interaction.client.user
+        guildid = interaction.guild.id
         if member.guild_permissions.manage_roles:
-            filename = './database/database.db'
-            connection = sqlite3.connect(filename) #connect to polldatabase
-            cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER, dropdown BOOL)")
             embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
             message = await channeltopostin.send(embed=embed)
-            cursor.execute("INSERT INTO selfrolesdata VALUES (?, ?, ?, ?)", (interaction.guild.id, message.id, False, None)) #write into the table the data
+
+            dropdown = False
+            color = None
+
+            await insert_into_selfroles(bot=bot, guildid=guildid, messageid=message.id, dropdown=dropdown, color=color)
             await interaction.response.send_message("**Success** \nThe reactionrolesmessage was created.", ephemeral=True)
-            connection.commit()
-            connection.close()
         else:
             await interaction.response.send_message("**ERROR** \nYou dont have the permission: `manage roles`.", ephemeral=True)
     else:
@@ -79,11 +80,8 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
         if checkifroleexists(interaction.guild, role) == True:
             if interaction.user.guild_permissions.manage_roles:
                 messageid = link2messageid(link)
-                filename = './database/database.db'
-                connection = sqlite3.connect(filename) #connect to polldatabase
-                cursor = connection.cursor()
-                cursor.execute("CREATE TABLE IF NOT EXISTS selfroleoptions (messageid INTEGER, emoji TEXT, roleid TEXT)")
-                if cursor.execute("SELECT * FROM selfroleoptions WHERE messageid = ? AND emoji = ? AND roleid = ?", (messageid, emoji, role.id)).fetchone() is None:
+                data = await get_selfrole_roleid(bot=bot, messageid=messageid, emoji=emoji)
+                if data is None:
                     channel = await bot.fetch_channel(link2channelid(link)) #getting the channel from the message
                     message = await channel.fetch_message(messageid)
                     embed = message.embeds[0]
@@ -93,7 +91,7 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
                         embed.add_field(name = f"{emoji} || {role}", value = description, inline = False) #adds a new field to the embedded message for each option
                     await message.edit(embed=embed) #sending all the fields
                     await message.add_reaction(emoji) #adding the reaction to message
-                    cursor.execute("INSERT INTO selfroleoptions VALUES (?, ?, ?, ?)", (messageid, emoji, role.id, description)) #write into the table the data
+                    await insert_into_selfrole_options(bot=bot, messageid=messageid, emoji=emoji, roleid=role.id)
                     await interaction.response.send_message("**SUCCESS** \nReactionrole was added.", ephemeral=True)
                 else:
                     await interaction.response.send_message("This reactionrole was already added.", ephemeral=True)
@@ -101,8 +99,6 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
                 await interaction.response.send_message("**ERROR** \nYou dont have the permission: `manage roles`.", ephemeral=True)
         else:
             await interaction.response.send_message("The role isnt created yet or was deleted.", ephemeral=True) #empheral doesnt work but nvm i have to work on other things
-        connection.commit()
-        connection.close()
     else:
         await interaction.response.send_message("The link to the reactionrolemessage isnt from this server.", ephemeral=True)
         
@@ -121,7 +117,6 @@ async def clear_message_from_selfroles(ctx, link): #create a new reactionrole
         os.remove(file_name)
     else:
         await ctx.reply('This message has been already cleared or was never a message for reactionroles!')
-
     
 async def add_selfrole_2_member(bot, payload):
     #v2:
@@ -131,17 +126,12 @@ async def add_selfrole_2_member(bot, payload):
     if memberid != bot.user.id:
         guild = bot.get_guild(payload.guild_id) #getting guild
         member = guild.get_member(memberid) #getting member
-        filename = './database/database.db'
-        connection = sqlite3.connect(filename) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS selfroleoptions (messageid INTEGER, emoji TEXT, roleid INTEGER)")
-        if cursor.execute("SELECT * FROM selfroleoptions WHERE messageid = ? AND emoji = ?", (messageid, emoji)).fetchone() is not None:        
-            cursor.execute("SELECT roleid FROM selfroleoptions WHERE messageid = ? AND emoji = ?", (messageid, emoji))
-            roleid = next(cursor, [None])[0]
+        roleid = await get_selfrole_roleid(bot=bot, messageid=messageid, emoji=emoji)
+        if roleid is not None:        
             role = discord.utils.get(guild.roles, id=roleid)
             if memberid != bot.user.id:
                 await member.add_roles(role)
-        elif cursor.execute("SELECT * FROM selfroleoptions WHERE messageid = ?", (messageid,)).fetchone() is not None:
+        elif await check_4_selfrole(bot=bot, messageid=messageid) == True:
             channelid = payload.channel_id
             channel = await bot.fetch_channel(channelid) #getting the channel from the message
             message = await channel.get_partial_message(messageid).fetch() #getting the message to add a reaction so the user can more easy react
@@ -168,12 +158,8 @@ async def remove_selfrole_from_member(bot, payload):
 
     guild = bot.get_guild(payload.guild_id) #getting guild
     member = guild.get_member(memberid) #getting member
-    filename = './database/database.db'
-    connection = sqlite3.connect(filename) #connect to polldatabase
-    cursor = connection.cursor()
-    if cursor.execute("SELECT * FROM selfroleoptions WHERE messageid = ? AND emoji = ?", (messageid, emoji)).fetchone() is not None:        
-        cursor.execute("SELECT roleid FROM selfroleoptions WHERE messageid = ? AND emoji = ?", (messageid, emoji))
-        roleid = next(cursor, [None])[0]
+    roleid = await get_selfrole_roleid(bot=bot, messageid=messageid, emoji=emoji)
+    if roleid is not None:        
         role = discord.utils.get(guild.roles, id=roleid)
         if memberid != bot.user.id:
             await member.remove_roles(role)

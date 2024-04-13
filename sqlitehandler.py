@@ -24,6 +24,23 @@ async def get_logchannelid(bot, guildid):
     logchannelid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logchannelid")
     return(logchannelid)
 
+async def insert_into_selfroles(bot, guildid, messageid, dropdown, color):
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfrolesdata VALUES ({guildid}, {messageid}, {dropdown}, {color})")
+
+async def check_4_selfrole(bot, messageid):
+    data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid}")
+    if data is not None:
+        return(True)
+    else:
+        return(False)
+
+async def insert_into_selfrole_options(bot, messageid, emoji, roleid, description):
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfroleoptions VALUES ({messageid}, {emoji}, {roleid}, {description})")
+
+async def get_selfrole_roleid(bot, messageid, emoji):
+    roleid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid} AND emoji = {emoji}", data_to_return="roleid")
+    return(roleid)
+
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):
     async with bot.pool.acquire() as connection:

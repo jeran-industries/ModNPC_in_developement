@@ -41,6 +41,29 @@ async def get_selfrole_roleid(bot, messageid, emoji):
     roleid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid} AND emoji = {emoji}", data_to_return="roleid")
     return(roleid)
 
+async def check_4_guild(bot, guildid):
+    data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="guildid")
+    if data is not None:
+        return(True)
+    else:
+        return(False)
+
+async def insert_into_guildtable(bot, guildid):
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, False, None, False, None, False, False, None)")
+
+#creating tables:
+async def create_guildsetup_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
+
+async def create_autorole_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid BOOL, membergroup INTEGER)")
+
+async def create_levelroles_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS levelroles (guildid INTEGER, roleid INTEGER, level INTEGER, keeprole BOOL)")
+
+async def create_member_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT, last_upvote INTEGER)")
+
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):
     async with bot.pool.acquire() as connection:
@@ -68,6 +91,11 @@ async def asqlite_update_data(bot, statement):
         await connection.commit()
         
 async def asqlite_insert_data(bot, statement):
+    async with bot.pool.acquire() as connection:
+        await connection.execute(statement)
+        await connection.commit()
+
+async def asqlite_create_table(bot, statement):
     async with bot.pool.acquire() as connection:
         await connection.execute(statement)
         await connection.commit()

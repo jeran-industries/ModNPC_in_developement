@@ -4,21 +4,24 @@ import discord
 import io
 import sqlite3
 
-def database_checking_and_creating(guildid):
+#own modules:
+from sqlitehandler import insert_into_guildtable, check_4_guild, create_guildsetup_table
+
+async def database_checking_and_creating(bot, guildid):
     file_name = "./database/database.db"
     connection = sqlite3.connect(file_name)
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid BOOL, membergroup INTEGER)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS levelroles (guildid INTEGER, roleid INTEGER, level INTEGER, keeprole BOOL)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT)") #creates a table
     cursor.execute("CREATE TABLE IF NOT EXISTS memberlog (guildid INTEGER, memberid INTEGER, timestamp TEXT, status TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER, dropdown BOOL, color TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS selfroleoptions (messageid INTEGER, emoji TEXT, roleid TEXT, description TEXT)")
-    
-    if (cursor.execute("SELECT * FROM guildsetup WHERE guildid = ?", (guildid,)).fetchone()) is None:
-        cursor.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, False, None, False, None, False, False, None)) #saving data
+    cursor.execute("CREATE TABLE IF NOT EXISTS polldata (messageid INTEGER, channelid INTEGER, guildid INTEGER, votecount INTEGER, runningstatus BOOLEAN)") #creates a table that have the ground data of the poll
+    cursor.execute("CREATE TABLE IF NOT EXISTS polloptions (optioncounter INTEGER, messageid INTEGER, option TEXT)") #creates a table for the options
+    cursor.execute("CREATE TABLE IF NOT EXISTS pollreactions (messageid INTEGER, member_id INTEGER, emoji TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS messagelog (eventtype TEXT, memberid INTEGER, guildid INTEGER, channelid INTEGER, messageid INTEGER, content TEXT, timestamp TEXT)") #creates a table that have the ground data of the poll
+
+    if await check_4_guild(bot=bot, guildid=guildid)==False:
+        await insert_into_guildtable(bot=bot, guildid=guildid)
 
     try:
         cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
@@ -41,7 +44,7 @@ def database_checking_and_creating(guildid):
         pass
 
     try:
-        cursor.execute("ALTER TABLE selfroleoptions ADD description str")
+        cursor.execute("ALTER TABLE selfroleoptions ADD description TEXT")
     except:
         pass
 

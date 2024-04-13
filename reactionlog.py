@@ -101,7 +101,6 @@ def write_into_log(eventtype, memberid, guildid, channelid, messageid, reaction,
     file_name = "./database/database.db"
     connection = sqlite3.connect(file_name) #connect to polldatabase
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS messagelog (eventtype TEXT, memberid INTEGER, guildid INTEGER, channelid INTEGER, messageid INTEGER, content TEXT, timestamp TEXT)") #creates a table that have the ground data of the poll
     cursor.execute("INSERT INTO messagelog VALUES (?, ?, ?, ?, ?, ?, ?)", (eventtype, memberid, guildid, channelid, messageid, reaction, timestamp)) #write into the table the data
     connection.commit()
     connection.close()

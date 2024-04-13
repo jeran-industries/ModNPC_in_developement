@@ -1,5 +1,4 @@
 import sqlite3
-import aiosqlite
 import discord
 import requests
 import json

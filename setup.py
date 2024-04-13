@@ -624,7 +624,6 @@ class WelcomemessageConfirmation(discord.ui.View):
         contentwelcomemessage = self.contentwelcomemessage.value
         connection = sqlite3.connect("./database/database.db")
         cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
         cursor.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage))
         connection.commit()
         connection.close()

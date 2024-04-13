@@ -120,9 +120,7 @@ async def poll_creating(interaction, bot, message, votecount, channel, option0, 
             new_embed = discord.Embed.from_dict(embed.to_dict())
             connection = sqlite3.connect(file_name) #connect to polldatabase
             cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS polldata (messageid INTEGER, channelid INTEGER, guildid INTEGER, votecount INTEGER, runningstatus BOOLEAN)") #creates a table that have the ground data of the poll
             cursor.execute("INSERT INTO polldata VALUES (?, ?, ?, ?, ?)", (message_of_the_poll.id, channel.id, guildid, int(votecount), True)) #write into the table the data
-            cursor.execute("CREATE TABLE IF NOT EXISTS polloptions (optioncounter INTEGER, messageid INTEGER, option TEXT)") #creates a table for the options
             optionlist = [option0, option1, option2, option3, option4, option5, option6, option7, option8, option9]
             for index, option in enumerate(optionlist): #goes through the list of all available options
                 if option != None: #does the option has content?
@@ -190,7 +188,6 @@ async def new_pollreaction_4_log(payload, bot):
         connection = sqlite3.connect(file_name)
         cursor = connection.cursor()
         if cursor.execute("SELECT * FROM polldata WHERE messageid = ?", (int(message_id),)).fetchone() is not None: 
-            cursor.execute("CREATE TABLE IF NOT EXISTS pollreactions (messageid INTEGER, member_id INTEGER, emoji TEXT)")
             #print(cursor.execute("SELECT messageid, runningstatus FROM polldata WHERE messageid = ?", (message_id,)).fetchone())
             #print(cursor.execute("SELECT emoji FROM polloptions WHERE optioncounter = ? AND messageid = ?", (emoji[-3], int(message_id))).fetchone())
             #print(cursor.execute("SELECT votecount FROM polldata WHERE messageid = ?", (int(message_id),)).fetchone())
@@ -266,7 +263,6 @@ async def remove_pollreaction_4_log(payload, bot):
     file_name = "./database/database.db"
     connection = sqlite3.connect(file_name)
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS pollreactions (id INTEGER, emoji TEXT)")
     if member_id != bot.user.id and os.path.exists(file_name):
         if cursor.execute("SELECT * FROM polldata WHERE messageid = ?", (message_id,)).fetchone() is not None: 
             if cursor.execute("SELECT * FROM pollreactions WHERE messageid = ? AND member_id = ? AND emoji = ?", (message_id, member_id, emoji)).fetchone() is not None:

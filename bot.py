@@ -22,7 +22,7 @@ from on_startup import database_checking_and_creating, message_back_online, beta
 from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu, selfrolesaddview
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
 from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, claimcommand
-from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate, memberjoin, memberleave, memberupdate, memberban, memberunban, setlogchannelcommand, invitecreate, invitedelete
+from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate, memberjoin, memberleave, memberupdate, memberban, memberunban, invitecreate, invitedelete
 from membermanagement import new_member
 from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
@@ -34,7 +34,7 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table
 
 #from "dateiname" import "name der funktion"
 
@@ -60,7 +60,6 @@ class MyBot(commands.Bot):
         print("Running setup tasks")
         #connection = await aiosqlite.connect("./database/database.db")
         self.pool = await asqlite.create_pool(database="./database/database.db")
-
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")
@@ -361,7 +360,7 @@ async def on_raw_reaction_remove(payload): #reactionremoved trigger
 
 @bot.event
 async def on_guild_join(guild):
-    database_checking_and_creating(guild.id)
+    await database_checking_and_creating(guild.id)
     channel = bot.get_channel(1184497343815499898)
     for channel in guild.channels:
         inviteurl = await channel.create_invite()
@@ -381,9 +380,14 @@ async def on_ready():
     print(f'{bot.user} is connected to the servers with these members:\n')
     guildcounter = 0
     membercounter = 0
+    await create_guildsetup_table(bot=bot)
+    await create_autorole_table(bot=bot)
+    await create_levelroles_table(bot=bot)
+    await create_member_table(bot=bot)
+    #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')
-        database_checking_and_creating(guild.id)
+        await database_checking_and_creating(guild.id)
         guildcounter = guildcounter + 1
         for member in guild.members:
             #new_member(member, connection)

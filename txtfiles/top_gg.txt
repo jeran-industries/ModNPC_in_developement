@@ -3,12 +3,26 @@ ModNPC features:
 -Leveling:
 ->xp for messages
 ->xp for vcs(only if 2 members are in the same voicechat)
+->levelroles
 -Selfroles:
 ->Roles that can be added to the profile by reacting to the message
 -Polls(not stable):
 ->Up to 9 options
 ->custom votecounts
-ModNPC's problems:
+-Autoroles:
+->by joining a server the bot gives to the member who joined roles.
+->ModNPC can detect between humans and bots+
+-Logging:
+->if a member joins
+->if a member leaves
+->if a member gets banned
+->if a member gets unbanned
+->if a message gets edited
+->if a message gets deleted
+->if a member joins a voicechat
+->if a member changes a voicechat
+->if a member leaves a voicechat
+
 Plans for ModNPC:
 -logs
 -custom vcs

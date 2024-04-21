@@ -137,6 +137,10 @@ async def add_selfrole_2_member(bot, payload):
             message = await channel.get_partial_message(messageid).fetch() #getting the message to add a reaction so the user can more easy react
             if memberid != bot.user.id:
                 await message.remove_reaction(emoji, member)
+        else:
+            channelid = payload.channel_id
+            channel = await bot.fetch_channel(channelid) #getting the channel from the message
+            await channel.send(f"<@{memberid}> There is an error due to problems saving the data in the database. Please ask the staff of the server to redo the reactionroles.")
     #v1:
     #message_id = payload.message_id
     #member_id = payload.user_id

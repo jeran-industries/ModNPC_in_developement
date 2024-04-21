@@ -360,7 +360,7 @@ async def on_raw_reaction_remove(payload): #reactionremoved trigger
 
 @bot.event
 async def on_guild_join(guild):
-    await database_checking_and_creating(guild.id)
+    await database_checking_and_creating(bot, guild.id)
     channel = bot.get_channel(1184497343815499898)
     for channel in guild.channels:
         inviteurl = await channel.create_invite()
@@ -387,12 +387,15 @@ async def on_ready():
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')
-        await database_checking_and_creating(guild.id)
+        await database_checking_and_creating(bot, guild.id)
         guildcounter = guildcounter + 1
         for member in guild.members:
             #new_member(member, connection)
             membercounter = membercounter + 1
-            print(member)
+            if member.id != guild.owner_id:
+                print(member)
+            else:
+                print(f"{member} (guildowner)")
     #print(f"These are all appcommands: \n{await bot.tree.sync()}")
     if bot.user.id == 1144006301765095484: #betabot
         await message_back_online(bot)

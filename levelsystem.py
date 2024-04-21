@@ -353,7 +353,7 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     progressbarfront = Image.open("./database/rankcards/textures/progressbarfront.png").convert("RGBA")
 
     # Load a font (choose a font of your preference)
-    font_path = "arial.ttf"
+    font_path = "./database/rankcards/textures/arial.ttf"
     font_size = 80
     font = ImageFont.truetype(font_path, font_size)
 

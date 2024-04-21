@@ -6,11 +6,15 @@ async def get_autoroles(bot, guildid, membergroup):
 
 async def change_xp_by(bot, guildid, memberid, xptomodify):
     xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
+    if xp==None:
+        xp=0
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = {xp + xptomodify} WHERE guildid = {guildid} AND memberid = {memberid}")
     return(xp)
 
 async def update_voicetime(bot, guildid, memberid):
     voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="voicetime")
+    if voicetime==None:
+        voicetime=0
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = {voicetime + 1} WHERE guildid = {guildid} AND memberid = {memberid}")
 
 async def get_lastupvote(bot, guildid, memberid):
@@ -28,7 +32,7 @@ async def insert_into_selfroles(bot, guildid, messageid, dropdown, color):
     await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfrolesdata VALUES ({guildid}, {messageid}, {dropdown}, {color})")
 
 async def check_4_selfrole(bot, messageid):
-    data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid}")
+    data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid}", data_to_return="messageid")
     if data is not None:
         return(True)
     else:
@@ -38,7 +42,10 @@ async def insert_into_selfrole_options(bot, messageid, emoji, roleid, descriptio
     await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfroleoptions VALUES ({messageid}, {emoji}, {roleid}, {description})")
 
 async def get_selfrole_roleid(bot, messageid, emoji):
-    roleid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid} AND emoji = {emoji}", data_to_return="roleid")
+    try:
+        roleid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM selfroleoptions WHERE messageid = {messageid} AND emoji = {emoji}", data_to_return="roleid")
+    except:
+        roleid = None
     return(roleid)
 
 async def check_4_guild(bot, guildid):

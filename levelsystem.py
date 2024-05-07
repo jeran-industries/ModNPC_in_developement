@@ -357,16 +357,16 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     font_size = 80
     font = ImageFont.truetype(font_path, font_size)
 
-
     # User's rank details (customize as needed)
     user_name = username
     user_rank = rank+1
     old_level = level
     new_level = level + 1
     percent = xp / (25 * new_level**2 - 25 * old_level**2) #x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
-
-    percent_position = (837, 45)
+    percent = math.floor(percent)
     
+    percent_position = (837, 45)
+
 
     # change width of progress bar based on percentage
     progressbarfront = progressbarfront.resize((1675, 80))

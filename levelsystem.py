@@ -363,7 +363,7 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     user_rank = rank+1
     old_level = level
     new_level = level + 1
-    percent = (25 * new_level**5 - xp) / (25 * new_level**5 - 25 * old_level**5)
+    percent = xp / (25 * new_level**2 - 25 * old_level**2) #x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
 
     percent_position = (837, 45)
     

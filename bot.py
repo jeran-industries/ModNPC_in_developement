@@ -17,38 +17,6 @@ import aiohttp
 import aiosqlite
 import asqlite 
 
-#how to install everything on archlinux:
-#1. enter this into the terminal:
-#       sudo pacman -S python-virtualenv 
-#2. enter this into a terminal in the mainproject for discord.py:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install discord.py 
-#3. enter this into a terminal in the mainproject for asqlite:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install libs/asqlite-master.zip 
-#3. enter this into a terminal in the mainproject for python-dotenv:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install python-dotenv
-#3. enter this into a terminal in the mainproject for aiosqlite:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install aiosqlite
-#3. enter this into a terminal in the mainproject for pillow:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install pillow
-#3. enter this into a terminal in the mainproject for requests:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install requests
-#3. enter this into a terminal in the mainproject for dotenv:
-#       virtualenv -p /usr/bin/python3 yourenv
-#       source yourenv/bin/activate
-#       pip install python-dotenv
-
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
 from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remove_selfrole_from_member, clear_message_from_selfroles, create_selfrole_select_menu, add_selfrole_2_select_menu, selfrolesaddview

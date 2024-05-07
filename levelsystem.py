@@ -350,17 +350,17 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
 
     background_image.paste(pfp, (75, 75), pfp)
 
-    progressbarfront = Image.open("./database/rankcards/textures/progressbarfront.png").convert("RGBA")
+    progressbarfront = Image.open("./textures/progressbarfront.png").convert("RGBA")
 
     # Load a font (choose a font of your preference)
-    font_path = "./database/rankcards/textures/arial.ttf"
+    font_path = "./textures/arial.ttf"
     font_size = 80
     font = ImageFont.truetype(font_path, font_size)
 
 
     # User's rank details (customize as needed)
     user_name = username
-    user_rank = rank
+    user_rank = rank+1
     old_level = level
     new_level = level + 1
     percent = (25 * new_level**5 - xp) / (25 * new_level**5 - 25 * old_level**5)
@@ -371,7 +371,7 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     # change width of progress bar based on percentage
     progressbarfront = progressbarfront.resize((1675, 80))
     progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * percent / 100), progressbarfront.size[1]))
-    progressbar = Image.open("./database/rankcards/textures/progressbarback.png").convert("RGBA")
+    progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
     progressbar = progressbar.resize((1675, 80))
     progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
     progressbar.paste(progressbarfront, (5, 5), progressbarfront)

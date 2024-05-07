@@ -15,7 +15,39 @@ import time
 import math
 import aiohttp
 import aiosqlite
-import asqlite
+import asqlite 
+
+#how to install everything on archlinux:
+#1. enter this into the terminal:
+#       sudo pacman -S python-virtualenv 
+#2. enter this into a terminal in the mainproject for discord.py:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install discord.py 
+#3. enter this into a terminal in the mainproject for asqlite:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install libs/asqlite-master.zip 
+#3. enter this into a terminal in the mainproject for python-dotenv:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install python-dotenv
+#3. enter this into a terminal in the mainproject for aiosqlite:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install aiosqlite
+#3. enter this into a terminal in the mainproject for pillow:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install pillow
+#3. enter this into a terminal in the mainproject for requests:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install requests
+#3. enter this into a terminal in the mainproject for dotenv:
+#       virtualenv -p /usr/bin/python3 yourenv
+#       source yourenv/bin/activate
+#       pip install python-dotenv
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -152,6 +184,16 @@ async def on_invite_create(invite):
 async def on_invite_delete(invite):
     await invitedelete(bot, invite)
 
+@bot.tree.command()
+async def about_me(interaction: discord.Interaction):
+    embed = discord.Embed(title = "Here are some interesting links:")
+    embed.add_field(name = f"Github Page:", value = f"https://github.com/jeran-industries/modnpc_in_developement", inline = False)
+    embed.add_field(name = f"Webdashboard:", value = f"https://jeran.polarlabs.io/modnpc/webdashboard", inline = False)
+    embed.add_field(name = f"Privacy Policy:", value = f"https://jeran.polarlabs.io/modnpc/privacy", inline = False)
+    embed.add_field(name = f"Terms of Service:", value = f"https://jeran.polarlabs.io/modnpc/tos", inline = False)
+    embed.add_field(name = f"Our patreon:heart::", value = f"https://patreon.com/modnpc", inline = False)
+    await interaction.response.send_message(embed = embed, delete_after=60)
+
 #add role to all users
 @bot.tree.command()
 async def add_role_to_all_users(interaction: discord.Interaction, role: discord.Role):
@@ -185,7 +227,7 @@ async def remove_role_from_all_human_users(interaction: discord.Interaction, rol
 #Simpletestcommand    
 @bot.tree.command()
 async def ping(interaction: discord.Interaction):
-    embed = discord.Embed(title = "Pong")
+    embed = discord.Embed(title = "Pong :ping_pong:")
     embed.add_field(name = f"Latency:", value = f"{math.floor(bot.latency * 1000)} ms", inline = False)
     embed.add_field(name = f"Users:", value = f"{len(bot.users)}", inline = False)
     embed.add_field(name = f"Guilds:", value = f"{len(bot.guilds)}", inline = False)

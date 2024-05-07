@@ -1,4 +1,5 @@
 .env
 /testfiles/
 /database/
+/yourenv/
 /__pycache__/

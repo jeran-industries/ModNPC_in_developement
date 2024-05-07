@@ -1,4 +1,4 @@
-python-dotenv==1.0.0
+python-dotenv==1.0.1
 discord.py==2.3.2
 discord.ext.context==0.1.8
 aiosqlite==0.20.0

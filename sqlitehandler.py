@@ -1,9 +1,21 @@
 import asqlite
 
+#autoroles:
+async def get_autorole(bot, membergroup, roleid):
+    roleid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM autorole WHERE roleid = {roleid} AND membergroup = {membergroup}', data_to_return="roleid")
+    return(roleid)
+
 async def get_autoroles(bot, guildid, membergroup):
     roleidsmembergroupusers = await asqlite_pull_all_data(bot=bot, statement=f'SELECT roleid FROM autorole WHERE guildid = {guildid} AND membergroup = {membergroup}', data_to_return="roleid")
     return(roleidsmembergroupusers)
 
+async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE autorole set membergroup = {membergroup} WHERE roleid = {roleid}")
+
+async def insert_autorole(bot, guildid, roleid, membergroup):
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO autorole VALUES ({guild_id}, {roleid}, {membergroup})")
+
+#levelsystem:
 async def change_xp_by(bot, guildid, memberid, xptomodify):
     xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
     if xp==None:
@@ -24,10 +36,12 @@ async def get_lastupvote(bot, guildid, memberid):
 async def update_lastupvote(bot, time, guildid, memberid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set last_upvote = {time} WHERE guildid = {guildid} AND memberid = {memberid}")
 
+#logging:
 async def get_logchannelid(bot, guildid):
     logchannelid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logchannelid")
     return(logchannelid)
 
+#selfroles:
 async def insert_into_selfroles(bot, guildid, messageid, dropdown, color):
     await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfrolesdata VALUES ({guildid}, {messageid}, {dropdown}, '{color}')")
 
@@ -48,6 +62,7 @@ async def get_selfrole_roleid(bot, messageid, emoji):
         roleid = None
     return(roleid)
 
+#guildmanagement:
 async def check_4_guild(bot, guildid):
     data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="guildid")
     if data is not None:
@@ -63,7 +78,7 @@ async def create_guildsetup_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
 
 async def create_autorole_table(bot):
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid BOOL, membergroup INTEGER)")
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")
 
 async def create_levelroles_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS levelroles (guildid INTEGER, roleid INTEGER, level INTEGER, keeprole BOOL)")
@@ -85,11 +100,13 @@ async def asqlite_pull_data(bot, statement, data_to_return):
 async def asqlite_pull_all_data(bot, statement, data_to_return):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute(statement)
-        datarow = await datacursor.fetchall()
-        if datarow is None:
+        datarows = await datacursor.fetchall()
+        if datarows is None:
             data = None
         else:
-            data = datarow
+            data = []
+            for datarow in datarows:
+                data.append(datarow[data_to_return])
     return(data)
 
 async def asqlite_update_data(bot, statement):

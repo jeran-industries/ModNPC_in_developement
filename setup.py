@@ -5,7 +5,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autoroles
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole
 
 
 async def setupcommand(interaction, bot):
@@ -78,7 +78,7 @@ class ViewAutoRoleSetup(discord.ui.View):
 
     @discord.ui.button(label="Add Autorole", custom_id="addautorolebutton")
     async def addautorole(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(view = ViewAutoRoleAddSetup(), ephemeral = True)
+        await interaction.response.send_message(view = ViewAutoRoleAddSetup(bot=self.bot), ephemeral = True)
 
     @discord.ui.button(label="Remove Autorole", custom_id="removeautorolebutton", disabled = True)
     async def emoveautorole(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -106,9 +106,6 @@ class ViewAutoRoleSetup(discord.ui.View):
         for membergroup in membergroups:
                 roleids = await get_autoroles(bot=self.bot, guildid=guild.id, membergroup=membergroup)
                 for roleid in roleids:
-                    roleid = roleid["roleid"]
-                    print(membergroup)
-                    print(roleid)
                     if membergroup == 0:
                             role=guild.get_role(roleid)
                             allmemberembed.add_field(name="Role", value=role.mention, inline=False)
@@ -123,30 +120,32 @@ class ViewAutoRoleSetup(discord.ui.View):
             
 
 class ViewAutoRoleAddSetup(discord.ui.View):
-    def __init__(self):
-
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(timeout=None)
-        self.add_item(RoleSelectAutoRoleAddSetup())
+        self.add_item(RoleSelectAutoRoleAddSetup(bot=self.bot))
 
 class RoleSelectAutoRoleAddSetup(discord.ui.RoleSelect):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(placeholder="Choose the new role for your autorole.")
 
     async def callback(self, interaction: discord.Interaction):
         role = self.values[0]
         if role.is_assignable():
-            await interaction.response.send_message(f"Who should be affected?", ephemeral = True, view = ViewAutoRoleUserGroupSetup(role=role))      
+            await interaction.response.send_message(f"Who should be affected?", ephemeral = True, view = ViewAutoRoleUserGroupSetup(role=role, bot=self.bot))      
         else:
             message = await interaction.response.send_message(f"The role can't be assigned by the bot because the role is above the highest role of the bot.", ephemeral = True)
 
 class ViewAutoRoleUserGroupSetup(discord.ui.View):
-    def __init__(self, role):
+    def __init__(self, role, bot):
         super().__init__(timeout=None)
-        self.add_item(SelectAutoRoleUserGroupSetup(role=role))
+        self.add_item(SelectAutoRoleUserGroupSetup(role=role, bot=bot))
 
 class SelectAutoRoleUserGroupSetup(discord.ui.Select):
-    def __init__(self, role):
+    def __init__(self, role, bot):
         self.role = role
+        self.bot = bot
         options = [
             discord.SelectOption(label='All users', description='All user: Bots and humans', emoji='👤'),
             discord.SelectOption(label='Bots', description='Only Bots', emoji='🤖'),
@@ -158,54 +157,51 @@ class SelectAutoRoleUserGroupSetup(discord.ui.Select):
         #await interaction.response.defer()
         option=self.values[0]
         role = self.role
+        bot = self.bot
         guild = interaction.guild
         #all(0) usergroups: bot(1) and humanusers(2)
+        membergroups=[0, 1, 2]
+
+        for membergroup in membergroups:
+            if membergroup == 0:
+                roleidsallusers = await get_autorole(bot=bot, membergroup=membergroup, roleid=role.id)
+            if membergroup == 1:
+                roleidsallbotusers = await get_autorole(bot=bot, membergroup=membergroup, roleid=role.id)
+            if membergroup == 2:
+                roleidsallbotusers = await get_autorole(bot=bot, membergroup=membergroup, roleid=role.id)
+
         connection = await aiosqlite.connect("./database/database.db")
-        roleidsalluserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 0))
-        roleidsallusers = await roleidsalluserscursor.fetchone()
-        await roleidsalluserscursor.close()
-
-        roleidsbotuserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 1))
-        roleidsallbotusers = await roleidsbotuserscursor.fetchone()
-        await roleidsbotuserscursor.close()
-
-        roleidsallhumanuserscursor = await connection.execute('SELECT * FROM autorole WHERE guildid = ? AND roleid = ? AND membergroup = ?', (guild.id, role.id, 2))
-        roleidsallhumanusers = await roleidsallhumanuserscursor.fetchone()
-        await roleidsallhumanuserscursor.close()
 
         if roleidsallusers is not None and option == "Bots": #if there is already a autorole and selected option is bots
-            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (1, role.id))
-            #await interaction.followup(f"You updated {self.role.name} and updated the assignement of the autorole from all users to only bots", ephemeral = True)
+            await update_autorole_2_other_membergroup(bot=bot, membergroup=1, roleid=role.id)
             embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and updated the assignement of the autorole from all users to only bot users", color=discord.Color.green())
         
         elif roleidsallusers is not None and option == "Humans": #if there is already a autorole and selected option is humans
-            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (2, role.id))
+            await update_autorole_2_other_membergroup(bot=bot, membergroup=2, roleid=role.id)
             embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and updated the assignement of the autorole from all users to only human users", color=discord.Color.green())
                 
         elif roleidsallbotusers is not None and option != "Bots": #if there is already a autorole and selected option is human or all users
-            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (0, role.id))
+            await update_autorole_2_other_membergroup(bot=bot, membergroup=0, roleid=role.id)
             embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and set the assignement autorole from only botusers to be added to all users", color=discord.Color.green())
 
         elif roleidsallhumanusers is not None and option != "Humans": #if there is already a autorole and selected option is human or all users
-            await connection.execute("UPDATE autorole set membergroup = ? WHERE roleid = ?", (0, role.id))
+            await update_autorole_2_other_membergroup(bot=bot, membergroup=0, roleid=role.id)
             embed = discord.Embed(title=f'SUCCESS', description = f"You updated {self.role.name} and set the assignement autorole from only human users to be added to all users", color=discord.Color.green())
         
         else:
             if option == "All users" and roleidsallusers is None:
-                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 0)") #write into the table the data")
+                await insert_autorole(bot=bot, guildid=guild.id, roleid=role.id, membergroup=0)
                 embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all users", color=discord.Color.green())
             elif option == "Bots" and roleidsallbotusers is None:
-                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 1)") #write into the table the data")
+                await insert_autorole(bot=bot, guildid=guild.id, roleid=role.id, membergroup=1)
                 embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all bot users", color=discord.Color.green())
             elif option == "Humans" and roleidsallhumanusers is None:
-                await connection.execute(f"INSERT INTO autorole VALUES ({guild.id}, {role.id}, 2)") #write into the table the data")
+                await insert_autorole(bot=bot, guildid=guild.id, roleid=role.id, membergroup=2)
                 embed = discord.Embed(title=f'SUCCESS', description = f"You created the autorole with {self.role.name} for all human users", color=discord.Color.green())
             else:
                 embed = discord.Embed(title=f'ERROR', description = f'This autorole is already created', color=discord.Color.red())
 
         await interaction.response.send_message(embed = embed, ephemeral = True)
-        await connection.commit()
-        await connection.close()
 
 class ViewAutoRoleRemoveSetup(discord.ui.View):
     def __init__(self):

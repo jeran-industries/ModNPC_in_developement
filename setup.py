@@ -5,29 +5,29 @@ import asyncio
 
 #own modules:
 from checks import check4dm
+from sqlitehandler import get_autoroles
 
 
-async def setupcommand(interaction):
+async def setupcommand(interaction, bot):
     if await check4dm(interaction) == False:
         member = interaction.user
         if member.guild_permissions.administrator:
             embeddedsetup = discord.Embed(title=f'Setup:', description = f'Here you can setup ModNPC', color=discord.Color.green())
-            await interaction.response.send_message(embed = embeddedsetup, ephemeral = True, view = SelectStart())
+            await interaction.response.send_message(embed = embeddedsetup, ephemeral = True, view = SelectStart(bot))
         else:
             misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
             await interaction.response.send_message(embed = misssuccessembed, ephemeral = True)
 
 #startselectmenu:
 class SelectStart(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__()
-        self.add_item(SelectStartMenu())
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(content=f"Sucessfully given you {self.values}")
+        self.add_item(SelectStartMenu(bot = bot))
 
 class SelectStartMenu(discord.ui.Select):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         options = [
             discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
             discord.SelectOption(label='Autoroles', description='Here you can add and remove autoroles.'),
@@ -41,11 +41,12 @@ class SelectStartMenu(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         result = self.values[0]
+        bot = self.bot
         #print(result)
         if result == "Anonymous Messages":
             await anonymousmessagessetup(interaction)
         elif result == "Autoroles":
-            await autorolessetup(interaction)
+            await autorolessetup(interaction, bot)
         elif result == "Botupdates":
             await botupdatessetup(interaction)
         elif result == "Custom VCs":
@@ -59,7 +60,7 @@ class SelectStartMenu(discord.ui.Select):
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
 
 #Autoroles:
-async def autorolessetup(interaction):
+async def autorolessetup(interaction, bot):
     
     #return()
 
@@ -67,10 +68,11 @@ async def autorolessetup(interaction):
     
     #print(labellist)
 
-    await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True, view = ViewAutoRoleSetup())
+    await interaction.response.send_message("This part isnt completly programmed yet", ephemeral = True, view = ViewAutoRoleSetup(bot))
 
 class ViewAutoRoleSetup(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(timeout=None)
         #self.add_item(Autorolelist(labellist = labellist))
 
@@ -97,33 +99,45 @@ class ViewAutoRoleSetup(discord.ui.View):
     @discord.ui.button(label="List Autoroles", custom_id="listautorolesbutton")
     async def listautoroles(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        connection = await aiosqlite.connect("./database/database.db") #connect to polldatabase
-        levelroleidcursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (interaction.guild.id, 0))
-        levelroleids = await levelroleidcursor.fetchall()
-        await levelroleidcursor.close()
-        membergroupcursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (interaction.guild.id, 0))
-        membergroups = await membergroupcursor.fetchall()
-        await membergroupcursor.close()
-        #print(levelroleid)
-        await connection.close()
-        try:
-            levelroleids[0]
-            for levelroleid, membergroup in levelroleids, membergroups:
-                role = guild.get_role(levelroleid) 
+        membergroups = [0, 1, 2]
+        allmemberembed = discord.Embed(title='All users', color=discord.Color.dark_grey())
+        allbotembed = discord.Embed(title='All bot users', color=discord.Color.dark_grey())
+        allhumanembed = discord.Embed(title='All human users', color=discord.Color.dark_grey())
+
+        for membergroup in membergroups:
+            roleids = await get_autoroles(bot=self.bot, guildid=guild.id, membergroup=membergroup)
+            if roleids is None:
                 if membergroup == 0:
-                    embed.add_field(name=role.name, value = f"Usergroup: All user")
+                    allmemberembed.add_field(name="There isnt any role for all users")
                 if membergroup == 1:
-                    embed.add_field(name=role.name, value = f"Usergroup: Botuser")
+                    allbotembed.add_field(name="There isnt any role for all bot users")
                 if membergroup == 2:
-                    embed.add_field(name=role.name, value = f"Usergroup: Human user")
-        except:
-            embed = discord.Embed(title=f'You dont have any autorole yet.', color=discord.Color.light_grey())
-        
-        await interaction.response.send_message(embed = embed, ephemeral=True)
+                    allhumanembed.add_field(name="There isnt any role for all human users")
+            else:
+                rolelist = []
+                for roleid in roleids:
+                    role=guild.get_role(roleid)
+                    if membergroup == 0:
+                        if role is None:
+                            allmemberembed.add_field(name="Nothing there", value="There isnt any role for all users")
+                        else:
+                            allmemberembed.add_field(name="Role", value=role.mention)
+                    if membergroup == 1:
+                        if role is None:
+                            allbotembed.add_field(name="Nothing there", value="There isnt any role for all bot users")
+                        else:
+                            allbotembed.add_field(name="Role", value=role.mention)
+                    if membergroup == 2:
+                        if role is None:
+                            allhumanembed.add_field(name="Nothing there", value="There isnt any role for all human users")
+                        else:
+                            allbotembed.add_field(name="Role", value=role.mention)
+        await interaction.response.send_message(embeds=[allmemberembed, allbotembed, allhumanembed], ephemeral=True)
             
 
 class ViewAutoRoleAddSetup(discord.ui.View):
     def __init__(self):
+
         super().__init__(timeout=None)
         self.add_item(RoleSelectAutoRoleAddSetup())
 

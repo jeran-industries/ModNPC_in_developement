@@ -216,7 +216,7 @@ async def ping(interaction: discord.Interaction):
 #setup:
 @bot.tree.command()
 async def setup(interaction:discord.Interaction):   
-    await setupcommand(interaction)
+    await setupcommand(interaction, bot)
 
 #@bot.tree.command()
 #async def log_set_channel(interaction: discord.Interaction, channel: discord.TextChannel):

@@ -89,7 +89,7 @@ async def asqlite_pull_all_data(bot, statement, data_to_return):
         if datarow is None:
             data = None
         else:
-            data = datarow[data_to_return]
+            data = datarow
     return(data)
 
 async def asqlite_update_data(bot, statement):

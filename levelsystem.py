@@ -42,7 +42,7 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
     if member.bot == False:
         registeredmember = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildids[1]} AND memberid = {member.id}", data_to_return="memberid")
         if registeredmember is not None:
-            xptomodify=1
+            xptomodify=floor(len(message.content)/20)+1
             #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
             for guildid in guildids:
                 messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")

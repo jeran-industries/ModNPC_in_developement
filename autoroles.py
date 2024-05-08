@@ -30,6 +30,10 @@ async def membergrouproleassignement(guild, membergroup, member, bot):
 
     roleidsmembergroupusers = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
 
+    for roleid in roleids:
+        role=guild.get_role(roleid)
+        await member.add_roles(role)
+
     roles = []
     if roleidsmembergroupusers != []:
         roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)

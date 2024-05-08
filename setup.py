@@ -105,33 +105,21 @@ class ViewAutoRoleSetup(discord.ui.View):
         allhumanembed = discord.Embed(title='All human users', color=discord.Color.dark_grey())
 
         for membergroup in membergroups:
-            roleids = await get_autoroles(bot=self.bot, guildid=guild.id, membergroup=membergroup)
-            if roleids is None:
-                if membergroup == 0:
-                    allmemberembed.add_field(name="There isnt any role for all users")
-                if membergroup == 1:
-                    allbotembed.add_field(name="There isnt any role for all bot users")
-                if membergroup == 2:
-                    allhumanembed.add_field(name="There isnt any role for all human users")
-            else:
-                rolelist = []
+                roleids = await get_autoroles(bot=self.bot, guildid=guild.id, membergroup=membergroup)
                 for roleid in roleids:
-                    role=guild.get_role(roleid)
+                    roleid = roleid["roleid"]
+                    print(membergroup)
+                    print(roleid)
                     if membergroup == 0:
-                        if role is None:
-                            allmemberembed.add_field(name="Nothing there", value="There isnt any role for all users")
-                        else:
-                            allmemberembed.add_field(name="Role", value=role.mention)
-                    if membergroup == 1:
-                        if role is None:
-                            allbotembed.add_field(name="Nothing there", value="There isnt any role for all bot users")
-                        else:
-                            allbotembed.add_field(name="Role", value=role.mention)
-                    if membergroup == 2:
-                        if role is None:
-                            allhumanembed.add_field(name="Nothing there", value="There isnt any role for all human users")
-                        else:
-                            allbotembed.add_field(name="Role", value=role.mention)
+                            role=guild.get_role(roleid)
+                            allmemberembed.add_field(name="Role", value=role.mention, inline=False)
+                    elif membergroup == 1:
+                            role=guild.get_role(roleid)
+                            allbotembed.add_field(name="Role", value=role.mention, inline=False)
+                    elif membergroup == 2:
+                            role=guild.get_role(roleid)
+                            allhumanembed.add_field(name="Role", value=role.mention, inline=False)
+
         await interaction.response.send_message(embeds=[allmemberembed, allbotembed, allhumanembed], ephemeral=True)
             
 

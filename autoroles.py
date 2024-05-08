@@ -31,6 +31,7 @@ async def membergrouproleassignement(guild, membergroup, member, bot):
     roleidsmembergroupusers = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
 
     for roleid in roleids:
+        roleid = roleid["roleid"]
         role=guild.get_role(roleid)
         await member.add_roles(role)
 

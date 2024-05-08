@@ -90,7 +90,6 @@ class ViewAutoRoleSetup(discord.ui.View):
         if interaction.user.id == guild.owner.id:
             connection = await aiosqlite.connect("./database/database.db")
             connection.execute("DELETE FROM autorole WHERE guildid = ?", (guild.id))
-            logchannelid = logchannelid[0]
             await connection.close()
             await interaction.response.send_message(f"All autoroles are deleted.", ephemeral = True)
         else:

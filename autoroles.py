@@ -28,16 +28,16 @@ async def add_autorole_2_user(bot, member):
 
 async def membergrouproleassignement(guild, membergroup, member, bot):
 
-    roleidsmembergroupusers = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
+    roleids = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
 
     for roleid in roleids:
         roleid = roleid["roleid"]
         role=guild.get_role(roleid)
         await member.add_roles(role)
 
-    roles = []
-    if roleidsmembergroupusers != []:
-        roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)
+    #roles = []
+    #if roleidsmembergroupusers != []:
+    #    roles = await getroles(roles=roles, roleids=roleidsmembergroupusers, guild=guild, member=member)
 
 async def addrole2allmembercommand(interaction, role, membergroup):
     if await check4dm(interaction) == False:

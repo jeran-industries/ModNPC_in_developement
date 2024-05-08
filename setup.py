@@ -5,7 +5,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid
 
 
 async def setupcommand(interaction, bot):
@@ -54,7 +54,7 @@ class SelectStartMenu(discord.ui.Select):
         elif result == "Levelsystem":
             await levelsystemsetup(interaction)
         elif result == "Logging":
-            await logsetup(interaction)
+            await logsetup(interaction, bot)
         elif result == "Welcomemessages":
             await welcomemessagessetup(interaction)
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
@@ -88,12 +88,12 @@ class ViewAutoRoleSetup(discord.ui.View):
     async def resetautoroles(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         if interaction.user.id == guild.owner.id:
-            connection = await aiosqlite.connect("./database/database.db")
-            connection.execute("DELETE FROM autorole WHERE guildid = ?", (guild.id))
-            await connection.close()
-            await interaction.response.send_message(f"All autoroles are deleted.", ephemeral = True)
+            await delete_all_autoroles(bot=self.bot, guildid=guild.id)
+            embed = discord.Embed(title='SUCCESS', description="All autoroles are deleted.", color=discord.Color.green())
+            await interaction.response.send_message(embed=embed, ephemeral = True)
         else:
-            await interaction.response.send_message(f"You arent the owner of the server and cant reset it.", ephemeral = True)
+            embed = discord.Embed(title='ERROR', description="You arent the owner of the server and cant reset it.", color=discord.Color.green())
+            await interaction.response.send_message(embed=embed, ephemeral = True)
 
     @discord.ui.button(label="List Autoroles", custom_id="listautorolesbutton")
     async def listautoroles(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -169,8 +169,6 @@ class SelectAutoRoleUserGroupSetup(discord.ui.Select):
                 roleidsallbotusers = await get_autorole(bot=bot, membergroup=membergroup, roleid=role.id)
             if membergroup == 2:
                 roleidsallbotusers = await get_autorole(bot=bot, membergroup=membergroup, roleid=role.id)
-
-        connection = await aiosqlite.connect("./database/database.db")
 
         if roleidsallusers is not None and option == "Bots": #if there is already a autorole and selected option is bots
             await update_autorole_2_other_membergroup(bot=bot, membergroup=1, roleid=role.id)
@@ -504,70 +502,53 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         await interaction.response.send_message(embed = embed, ephemeral=True)
 
 #Logs:
-async def logsetup(interaction: discord.Interaction):
+async def logsetup(interaction: discord.Interaction, bot):
     member = interaction.user
-    await interaction.response.send_message("This part isnt completly programmed yet and the setupmenu for logging is in beta. This is why some buttons are deactivated.", view=LogSetupView(), ephemeral = True)
+    embed = discord.Embed(title = f"*LOGGING SETUP*")
+    await interaction.response.send_message(embed=embed, view=LogSetupView(bot=bot), ephemeral = True)
 
 class LogSetupView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(timeout=None)
-
-    @discord.ui.button(label="Activate", custom_id="LogActivate")
-    async def activate(self, interaction: discord.Interaction, button: discord.ui.button):
-        connection = await aiosqlite.connect("./database/database.db")
-        guildid = interaction.guild.id
-        logchannelidcursor = await connection.execute('SELECT logchannelid FROM guildsetup WHERE guildid = ?', (guildid,))
-        logchannelid = await logchannelidcursor.fetchone()
-        logchannelid = logchannelid[0]
-        await connection.close()
-        await logchannelidcursor.close()
-        if logchannelid is not None:
-            await interaction.response.send_message(f"Logging is already activated by setting the logging channel.", ephemeral = True)
-        else:
-            await interaction.response.send_message(f"Use first the button: `Set the logchannel`", ephemeral = True)        
-
-    @discord.ui.button(label="Deactivate", custom_id="LogDeactivate")
-    async def deactivate(self, interaction: discord.Interaction, button: discord.ui.button):
-        connection = await aiosqlite.connect("./database/database.db")
-        guildid = interaction.guild.id
-        await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (0, guildid))
-        await connection.commit()
-        await connection.close()
-        await interaction.response.send_message(f"You deactivated the logging", ephemeral = True)
 
     @discord.ui.button(label="Set the logchannel", custom_id="LogChannelSet")
     async def logchannelselect(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=LogChannelSelect(), ephemeral = True)
+        await interaction.response.send_message(view=LogChannelSelect(bot = self.bot), ephemeral = True)
         #await interaction.response.send_message(f"Use this command to set the logging channel: `/log_set_channel`", ephemeral = True)  
 
+    @discord.ui.button(label="Deactivate", custom_id="LogDeactivate")
+    async def deactivate(self, interaction: discord.Interaction, button: discord.ui.button):
+        await update_logchannelid(bot=self.bot, logchannelid=0, guildid=interaction.guild.id)
+        embed = discord.Embed(title = f"*SUCCESS*", description = f"You deactivated the logging")
+        await interaction.response.send_message(embed=embed, ephemeral = True)
+
 class LogChannelSelect(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(timeout=None)
-        self.add_item(LogChannelSelectMenu())
+        self.add_item(LogChannelSelectMenu(bot=self.bot))
 
 class LogChannelSelectMenu(discord.ui.ChannelSelect):
-    def __init__(self, custom_id = "ChannelSelectLog"):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(placeholder="Choose the channel where the log messages will be sent.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
 
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
+        bot = self.bot
+        member = interaction.user
+        await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             channel = await channel.fetch()
-            #bot = interaction.client.user
-            #permissions = interaction.app_permissions.view_channel
-            #print(f"These are the permissions: {permissions}")
             testembed = discord.Embed(title = f"This is a testmessage.", description = f"This action was made by {member.mention} ||{member.id}||.")
             try:
                 testmessage = await channel.send(embed=testembed)
                 try:
                     await testmessage.create_thread(name="testhread")
-                    member = interaction.user
-                    connection = await aiosqlite.connect("./database/database.db")
                     guildid = interaction.guild.id
-                    await connection.execute("UPDATE guildsetup set logchannelid = ? WHERE guildid = ?", (channel.id, guildid))
-                    await connection.commit()
-                    await connection.close()
-                    embed = discord.Embed(title = f"This channel was set to the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
+                    await update_logchannelid(bot=bot, logchannelid=channel.id, guildid=guildid)
+                    embed = discord.Embed(title = f"This channel was set to be the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
                     await channel.send(embed = embed)
                     embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.\nI always recommand activating the permission: `administrator`") 
                 except :
@@ -577,7 +558,7 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
                 embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please activate these permissions: \n`send messages`\n`send messages in threads`\n`create public threads`")
         except:
             embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please activate these permissions: \n`view channel`\n`manage webhooks`\n`send messages`\n`send messages in threads`\n`create public threads`")
-        await interaction.response.send_message(embed = embed, ephemeral = True)
+        await interaction.followup.send(embed = embed, ephemeral = True)
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

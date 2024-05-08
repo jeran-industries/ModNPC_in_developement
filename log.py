@@ -70,12 +70,15 @@ async def messagesenteventlog(bot, message):
 
 async def messageeditedeventlog(bot, before, after):
     eventtype = "edited"
-    logchannel = await getlogchannel(bot, after.guild.id)
-    if logchannel is not None and before is not None and after is not None:
-        embed = discord.Embed(title = f"{after.author.display_name} ({after.author.id}) just edited the message: {after.jump_url}.")
-        embed.add_field(name = f"Before: ({before.created_at})", value = f"```{before.content}```\n\n||Embeds if existing in the thread||", inline = True)
-        embed.add_field(name = f"After: ({after.edited_at})", value = f"```{after.content}```\n\n||Embeds if existing in the thread||", inline = True)
-        await loginfosandsending(embed, after.author, bot, logchannel, message1=before, message2=after)
+    if after is None:
+        return
+    else:
+        logchannel = await getlogchannel(bot, after.guild.id)
+        if logchannel is not None and before is not None and after is not None:
+            embed = discord.Embed(title = f"{after.author.display_name} ({after.author.id}) just edited the message: {after.jump_url}.")
+            embed.add_field(name = f"Before: ({before.created_at})", value = f"```{before.content}```\n\n||Embeds if existing in the thread||", inline = True)
+            embed.add_field(name = f"After: ({after.edited_at})", value = f"```{after.content}```\n\n||Embeds if existing in the thread||", inline = True)
+            await loginfosandsending(embed, after.author, bot, logchannel, message1=before, message2=after)
     #v2:
     #write_into_log(eventtype, message.author.id, message.guild.id, message.channel.id, message.id, message.content, str(message.edited_at))
 

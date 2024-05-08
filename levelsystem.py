@@ -3,6 +3,7 @@ import math
 import discord
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
+from math import floor
 
 #own modules:
 from membermanagement import new_member
@@ -81,7 +82,7 @@ async def new_minute_in_vc(bot):
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
     #guild_id = interaction.guild.id
-    await interaction.response.defer(thinking=True)
+    await interaction.response.defer(thinking=True, ephemeral=True)
     member_id = 0
     if mentionedmember == None:
         member = interaction.user

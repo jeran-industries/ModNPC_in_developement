@@ -15,6 +15,9 @@ async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
 async def insert_autorole(bot, guildid, roleid, membergroup):
     await asqlite_insert_data(bot=bot, statement=f"INSERT INTO autorole VALUES ({guild_id}, {roleid}, {membergroup})")
 
+async def delete_all_autoroles(bot, guildid):
+    await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
+
 #levelsystem:
 async def change_xp_by(bot, guildid, memberid, xptomodify):
     xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
@@ -40,6 +43,9 @@ async def update_lastupvote(bot, time, guildid, memberid):
 async def get_logchannelid(bot, guildid):
     logchannelid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logchannelid")
     return(logchannelid)
+
+async def update_logchannelid(bot, logchannelid, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set logchannelid = {logchannelid} WHERE guildid = {guildid}")
 
 #selfroles:
 async def insert_into_selfroles(bot, guildid, messageid, dropdown, color):
@@ -128,3 +134,8 @@ async def asqlite_get_counter(bot, statement):
     async with bot.pool.acquire() as connection:
         counter = await connection.execute(statement)
         return(counter)
+
+async def asqlite_delete(bot, statement):
+    async with bot.pool.acquire() as connection:
+        await connection.execute(statement)
+        await connection.commit()

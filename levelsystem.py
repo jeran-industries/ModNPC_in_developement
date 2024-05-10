@@ -364,20 +364,15 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     user_rank = rank+1
     old_level = level
     new_level = level + 1
-    percent = xp / (25 * new_level**2 - 25 * old_level**2) #x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
+    percent = (xp - 25 * old_level**2) / (25 * new_level**2 - 25 * old_level**2) * 100#x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
     percent = math.floor(percent)
-    
-
-    print(percent)
-    
+        
     percent_position = (837, 45)
 
 
     # change width of progress bar based on percentage
     progressbarfront = progressbarfront.resize((1675, 80))
-    print(progressbarfront.size[0])
-    print(progressbarfront.size[1])
-    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.1) / 100), progressbarfront.size[1]))
+    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.001) / 100), progressbarfront.size[1]))
     progressbar = Image.open("textures/progressbarback.png").convert("RGBA")
     progressbar = progressbar.resize((1675, 80))
     progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
@@ -491,7 +486,6 @@ class modalchangebackground(discord.ui.Modal, title="Change your background"):
     async def on_submit(self, interaction: discord.Interaction):
         imagelink = self.imagelink
         member = interaction.user
-        print(imagelink)
         messageid = link2messageid(imagelink)
         message = await member.fetch_message(messageid)
 

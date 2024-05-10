@@ -4,6 +4,7 @@ import discord
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
 from math import floor
+import unicodedata
 
 #own modules:
 from membermanagement import new_member
@@ -359,20 +360,25 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     font = ImageFont.truetype(font_path, font_size)
 
     # User's rank details (customize as needed)
-    user_name = username
+    user_name = unicodedata.normalize("NFKD", username)
     user_rank = rank+1
     old_level = level
     new_level = level + 1
     percent = xp / (25 * new_level**2 - 25 * old_level**2) #x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
     percent = math.floor(percent)
     
+
+    print(percent)
+    
     percent_position = (837, 45)
 
 
     # change width of progress bar based on percentage
     progressbarfront = progressbarfront.resize((1675, 80))
-    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * percent / 100), progressbarfront.size[1]))
-    progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
+    print(progressbarfront.size[0])
+    print(progressbarfront.size[1])
+    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.1) / 100), progressbarfront.size[1]))
+    progressbar = Image.open("textures/progressbarback.png").convert("RGBA")
     progressbar = progressbar.resize((1675, 80))
     progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
     progressbar.paste(progressbarfront, (5, 5), progressbarfront)

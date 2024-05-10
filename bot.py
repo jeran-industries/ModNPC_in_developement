@@ -58,7 +58,6 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         # Load the commands extension
         print("Running setup tasks")
-        #connection = await aiosqlite.connect("./database/database.db")
         self.pool = await asqlite.create_pool(database="./database/database.db")
         one_minute_loop.start()
         ten_minute_loop.start()

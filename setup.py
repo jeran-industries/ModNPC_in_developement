@@ -1,11 +1,10 @@
 import discord
 import sqlite3
-import aiosqlite
 import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, get_levelrole, create_levelrole, delete_levelrole
 
 
 async def setupcommand(interaction, bot):
@@ -52,7 +51,7 @@ class SelectStartMenu(discord.ui.Select):
         elif result == "Custom VCs":
             await customvcsetup(interaction)
         elif result == "Levelsystem":
-            await levelsystemsetup(interaction)
+            await levelsystemsetup(interaction, bot)
         elif result == "Logging":
             await logsetup(interaction, bot)
         elif result == "Welcomemessages":
@@ -267,13 +266,13 @@ class ChannelSelectBotupdateSetup(discord.ui.ChannelSelect):
         newschannelid = 1191732882092339270
         newschannel = await bot.fetch_channel(newschannelid)
         await newschannel.follow(destination = channel)
-        file_name = "./database/database.db"
-        connection = sqlite3.connect(file_name) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("UPDATE guildsetup set botupdatestatus = ? WHERE guildid = ?", (True, interaction.guild.id))
-        cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, interaction.guild.id))
-        connection.commit()
-        connection.close()
+        #file_name = "./database/database.db"
+        #connection = sqlite3.connect(file_name) #connect to polldatabase
+        #cursor = connection.cursor()
+        #cursor.execute("UPDATE guildsetup set botupdatestatus = ? WHERE guildid = ?", (True, interaction.guild.id))
+        #cursor.execute("UPDATE guildsetup set botupdatechannelid = ? WHERE guildid = ?", (channel.id, interaction.guild.id))
+        #connection.commit()
+        #connection.close()
         embed = discord.Embed(title=f'Success', description=f"The botupdatechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.\nAll commands can be now used.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed, ephemeral = True)
 
@@ -284,42 +283,33 @@ async def customvcsetup(interaction):
 
 #Levelsystem:
 
-async def levelsystemsetup(interaction):
+async def levelsystemsetup(interaction, bot):
     embeddedsetuplevelsystem = discord.Embed(title=f'Levelsystem Setup:', description = f'Here you activate, deactivate, reset and set the levelping', color=discord.Color.green())
-    await interaction.response.send_message(embed = embeddedsetuplevelsystem, ephemeral = True, view = Buttons4LevelsystemSetup())
+    await interaction.response.send_message(embed = embeddedsetuplevelsystem, ephemeral = True, view = Buttons4LevelsystemSetup(bot))
 
 class Buttons4LevelsystemSetup(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Activate", custom_id="LevelsystemSetupActivate", style=discord.ButtonStyle.green)
     async def levelsystemsetupactivate(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        file_name = "./database/database.db"
-        connection = sqlite3.connect(file_name) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("UPDATE guildsetup set levelingsystemstatus = ? WHERE guildid = ?", (True, guild.id))
-        connection.commit()
-        connection.close()
+        await activate_levelsystem(bot=self.bot, guildid=guild.id)
         embed = discord.Embed(title=f'Success', description=f"You activated the levelsystem commands.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed, ephemeral = True)
     
     @discord.ui.button(label="Deactivate", custom_id="LevelsystemSetupDeactivate", style=discord.ButtonStyle.red)
     async def levelsystemsetupdeactivate(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        file_name = "./database/database.db"
-        connection = sqlite3.connect(file_name) #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("UPDATE guildsetup set levelingsystemstatus = ? WHERE guildid = ?", (False, guild.id))
-        connection.commit()
-        connection.close()
+        await deactivate_levelsystem(bot=self.bot, guildid=guild.id)
         embed = discord.Embed(title=f'Success', description=f"You deactivated the levelsystem commands.", color=discord.Color.red())
         await interaction.response.send_message(embed = embed, ephemeral=True)
     
     @discord.ui.button(label="Add a levelrole", custom_id="AddALevelroleSetup", style=discord.ButtonStyle.grey)
     async def addalevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(title=f'Add a new levelrole by setting the right level, the roleid and if it should be removed as soon you reach a new level:', color=discord.Color.light_grey())
-        await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelroleSelect())
+        await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelroleSelect(bot=self.bot))
 
     @discord.ui.button(label="Remove a levelrole", custom_id="RemoveALevelroleSetup", style=discord.ButtonStyle.grey)
     async def removealevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -341,7 +331,7 @@ class Buttons4LevelsystemSetup(discord.ui.View):
             for i in levelroleoptions:
                 role = discord.utils.get(guild.roles, id=i)
                 labellist.append(discord.SelectOption(label=role.name, value=role.id))
-            await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(levelroleoptions = labellist))
+            await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(bot=self.bot, levelroleoptions = labellist))
 
 
     @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
@@ -368,45 +358,50 @@ class Buttons4LevelsystemSetup(discord.ui.View):
             embed = discord.Embed(title=f'Error', description=f"For doing this you need to be an owner.", color=discord.Color.dark_red())
             await interaction.response.send_message(embed = embed, ephemeral=False)
 
+class LevelroleSelect(discord.ui.View):
+    def __init__(self, bot):
+        self.bot=bot
+        super().__init__()
+        self.add_item(LevelroleRoleSelectMenu(bot))
+
 class LevelroleRoleSelectMenu(discord.ui.RoleSelect):
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot=bot
         super().__init__(placeholder="Choose the role:")
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(LevelroleLevelModal(role=self.values))
-
-class LevelroleSelect(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.add_item(LevelroleRoleSelectMenu())
+        await interaction.response.send_modal(LevelroleLevelModal(bot=self.bot, role=self.values))
 
 class LevelroleLevelModal(discord.ui.Modal, title="At which level do you get the role?"):
-    def __init__(self, role):
+    def __init__(self, bot, role):
         self.role = role
+        self.bot = bot
         super().__init__()
     
     sth = discord.ui.TextInput(label=f"Enter the level", placeholder="Enter the level, at which a member achieves the role", style=discord.TextStyle.short)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(view=KeepRoleSelect(role=self.role, level=self.sth))
+        await interaction.response.send_message(view=KeepRoleSelect(bot=self.bot, role=self.role, level=self.sth))
 
 class KeepRoleSelectMenu(discord.ui.Select):
-    def __init__(self, role, level):
+    def __init__(self, bot, role, level):
         options = [
             discord.SelectOption(label='The member can keep the role', emoji='🟩'),
             discord.SelectOption(label="The member can't keep the role", emoji='🟥'),
         ]
         self.role = role
         self.level = level
+        self.bot = bot
         super().__init__(placeholder="Choose if the member can keep the role", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         role = self.role
         level = self.level
+        bot = self.bot
         if self.values[0] == 'The member can keep the role':
-            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can keep the role after getting the next levelrole.", view=CreateLevelrole(role=self.role, level=self.level, keeprole = True))
+            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = True))
         elif self.values[0] == "The member can't keep the role":
-            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can't keep the role after getting the next levelrole.", view=CreateLevelrole(role=self.role, level=self.level, keeprole = False))
+            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can't keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = False))
 
 class KeepRoleSelect(discord.ui.View):
     def __init__(self, role, level):
@@ -414,22 +409,22 @@ class KeepRoleSelect(discord.ui.View):
         self.add_item(KeepRoleSelectMenu(role=role, level=level))
 
 class CreateLevelrole(discord.ui.View):
-    def __init__(self, role, level, keeprole):
+    def __init__(self, bot, role, level, keeprole):
         self.role = role
         self.level = level
         self.keeprole = keeprole
+        self.bot = bot
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Create", custom_id="create")
     async def createselfrolebutton(self, interaction: discord.Interaction, button: discord.ui.button):
         roleid = int(self.role[0].id)
-        connection = sqlite3.connect("./database/database.db") #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS levelroles (guildid INTEGER, roleid INTEGER, level INTEGER, keeprole BOOL)")
-        if cursor.execute("SELECT * FROM levelroles WHERE roleid = ?", (roleid, )).fetchone() is None: 
-            cursor.execute(f"INSERT INTO levelroles VALUES ({interaction.guild.id}, {self.role[0].id}, {self.level}, {self.keeprole})") #write into the table the data
-            connection.commit()
-            connection.close()
+        if await get_levelrole(bot=bot, roleid=roleid) == True: 
+            guildid=interaction.guild.id
+            level=self.level
+            keeprole=self.keeprole
+            bot=self.bot
+            await create_levelrole(bot=bot, guildid=guildid, roleid=roleid, level=level, keeprole=keeprole)
             await interaction.response.send_message(f"Success the levelrole was created.", ephemeral=True)
         else:
             await interaction.response.send_message(f"This role is already used.", ephemeral=True)
@@ -438,22 +433,20 @@ class CreateLevelrole(discord.ui.View):
     async def discardselfrolebutton(self, interaction: discord.Interaction, button: discord.ui.button):
         await interaction.response.send_message(f"You discarded the changes", ephemeral=True)
 
+class LevelRole2RemoveSelect(discord.ui.View):
+    def __init__(self, bot, levelroleoptions):
+        self.bot = bot
+        super().__init__()
+        self.add_item(LevelRole2RemoveSelectMenu(bot=self.bot, levelroleoptions = levelroleoptions))
+
 class LevelRole2RemoveSelectMenu(discord.ui.Select):
-    def __init__(self, levelroleoptions):
+    def __init__(self, bot, levelroleoptions):
+        self.bot = bot
         super().__init__(placeholder="Select the levelrole to remove it", options=levelroleoptions)
 
-    async def callback(self, interaction: discord.Interaction):
-        connection = sqlite3.connect("./database/database.db") #connect to polldatabase
-        cursor = connection.cursor()
-        cursor.execute("DELETE FROM levelroles WHERE roleid = ?", (self.values[0],))
-        connection.commit()
-        connection.close()
+    async def callback(self, interaction: discord.Interaction, bot):
+        await delete_levelrole(bot=self.bot, roleid=self.values[0])
         await interaction.response.send_message(content=f"Success the levelrole was deleted.", ephemeral=True)
-
-class LevelRole2RemoveSelect(discord.ui.View):
-    def __init__(self, levelroleoptions):
-        super().__init__()
-        self.add_item(LevelRole2RemoveSelectMenu(levelroleoptions = levelroleoptions))
 
 class ViewLevelReset(discord.ui.View): #in developement
     def __init__(self):
@@ -478,12 +471,12 @@ class MentionableSelectLevelReset(discord.ui.MentionableSelect):
         await interaction.response.send_message(embed = embed, ephemeral=True)
 
 class ViewLevelPingSetup(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot):
         super().__init__(timeout=None)
-        self.add_item(ChannelSelectLevelPingSetup())
+        self.add_item(ChannelSelectLevelPingSetup(bot))
 
 class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
-    def __init__(self, custom_id = "channelselectlevelpingsetup"):
+    def __init__(self, bot, custom_id = "channelselectlevelpingsetup"):
         super().__init__(placeholder="Choose the channel where the levelpings will be send.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
 
     async def callback(self, interaction: discord.Interaction):
@@ -498,7 +491,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         cursor.execute("UPDATE guildsetup set levelingpingmessagechannel = ? WHERE guildid = ?", (channel.id, guild.id))
         connection.commit()
         connection.close()
-        embed = discord.Embed(title=f'Success', description=f"The levelingpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"The levelpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed, ephemeral=True)
 
 #Logs:

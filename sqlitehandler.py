@@ -39,6 +39,30 @@ async def get_lastupvote(bot, guildid, memberid):
 async def update_lastupvote(bot, time, guildid, memberid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set last_upvote = {time} WHERE guildid = {guildid} AND memberid = {memberid}")
 
+async def activate_levelsystem(bot, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingsystemstatus = 1 WHERE guildid = {guildid}")
+
+async def deactivate_levelsystem(bot, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingsystemstatus = 0 WHERE guildid = {guildid}")
+
+async def update_levelingpingchannel(bot, channelid, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingpingmessagechannel = {channelid} WHERE guildid = {guildid}")
+
+async def get_levelrole(bot, roleid):
+    await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE roleid = {roleid}", data_to_return="roleid")
+    if roleid is None:
+        return(False)
+    else:
+        return(True)
+
+async def create_levelrole(bot, guildid, roleid, level, keeprole):
+    #cursor.execute(f"INSERT INTO levelroles VALUES ({interaction.guild.id}, {self.role[0].id}, {self.level}, {self.keeprole})") #write into the table the data
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO levelroles VALUES ({guildid}, {roleid}, {level}, {keeprole})")
+
+async def delete_levelrole(bot, roleid):
+    #cursor.execute("DELETE FROM levelroles WHERE roleid = ?", (self.values[0],))
+    await asqlite_delete(bot=bot, statement=f"DELETE FROM levelroles WHERE roleid = {roleid}")
+
 #logging:
 async def get_logchannelid(bot, guildid):
     logchannelid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logchannelid")
@@ -77,11 +101,21 @@ async def check_4_guild(bot, guildid):
         return(False)
 
 async def insert_into_guildtable(bot, guildid):
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, False, None, False, None, False, False, None)")
+    
+    levelingsystemstatus=False
+    levelingpingmessagechannel=None
+    welcomemessagestatus=False
+    anonymousmessagecooldown=None
+    anonymousmessagestatus=False
+    botupdatestatus=False
+    botupdatechannelid=None
+    logchannelid=None
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}')")
 
 #creating tables:
 async def create_guildsetup_table(bot):
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagecooldown BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER)")
+    #botupdatestatus BOOL, botupdatechannelid INTEGER)"
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER)")
 
 async def create_autorole_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")

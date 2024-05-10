@@ -82,7 +82,7 @@ async def new_minute_in_vc(bot):
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
     #guild_id = interaction.guild.id
-    await interaction.response.defer(thinking=True, ephemeral=True)
+    await interaction.response.defer(thinking=True)
     member_id = 0
     if mentionedmember == None:
         member = interaction.user

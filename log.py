@@ -88,8 +88,13 @@ async def messagedeletedeventlog(bot, message):
         logchannel = await getlogchannel(bot, message.guild.id)
         if logchannel is not None:
             embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")
-            embed.add_field(name = f"Content: ({message.created_at})", value = f"```{message.content}```\n\n||Embeds if existing in the thread||", inline = True)
-            await loginfosandsending(embed, message.author, bot, logchannel, message1=message)
+            embed.add_field(name = f"Content: ({message.created_at})", value = f"```{message.content}```\n\n||Embeds and files if existing in the thread||", inline = True)
+            if message.attachments is not None:
+                files=[]
+                for attachment in message.attachments:
+                    file = await attachment.to_file(filename=f"./database/loggingfiles/{message.id}/")
+                    files.append(file)
+            await loginfosandsending(embed, message.author, bot, logchannel, message1=message, files=files)
     #v1:
     #file_name = "./Logs/Messages/V1/" + str(message.guild.id) + '/' + str(message.channel.id) + ".json"
     ##print(file_name)
@@ -259,7 +264,7 @@ async def invitedelete(bot, invite):
             embed.add_field(name="Informations:", value = f"Used: {invite.uses}\nCode: {invite.code}\nCreated: {invite.created_at}")
             await loginfosandsending(embed, member, bot, logchannel)
 
-async def loginfosandsending(embed, member, bot, logchannel, message1 = None, message2 = None):
+async def loginfosandsending(embed, member, bot, logchannel, message1 = None, message2 = None, files = None):
     try:
         if member.bot:
             embed.set_author(name=f"{member.display_name} ({member.id})")
@@ -271,7 +276,7 @@ async def loginfosandsending(embed, member, bot, logchannel, message1 = None, me
     if bot.user.id != member.id:
         logmessage = await logchannel.send(embed = embed)
         if message1 is not None:
-            if message1.embeds != [] and message1.embeds is not None:
+            if (message1.embeds != [] and message1.embeds is not None) or files is not None:
                 logmessagethread = await logmessage.create_thread(name = "Embeds")
                 threadmessage1 = await logmessagethread.send(content = f"Embed of {member.display_name} ({member.id})", embeds = message1.embeds)
                 await threadmessage1.pin()
@@ -279,6 +284,9 @@ async def loginfosandsending(embed, member, bot, logchannel, message1 = None, me
                     if message2.embeds != [] and message2.embeds is not None:
                         threadmessage2 = await logmessagethread.send(content = f"Embed of {member.display_name} ({member.id})", embeds = message2.embeds)
                         await threadmessage2.pin()
+                if files is not None:
+                    filesmessage = await logmessagethread.send(content = f"File of {member.display_name} ({member.id})", files = files)
+                    await filesmessage.pin()
 
 async def getlogchannel(bot, guildid):
     logchannelid = await get_logchannelid(bot=bot, guildid=guildid)

@@ -373,7 +373,7 @@ def rankcardgenerator(username, memberid, rank, xp, level, guildid):
     # change width of progress bar based on percentage
     progressbarfront = progressbarfront.resize((1675, 80))
     progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.001) / 100), progressbarfront.size[1]))
-    progressbar = Image.open("textures/progressbarback.png").convert("RGBA")
+    progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
     progressbar = progressbar.resize((1675, 80))
     progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
     progressbar.paste(progressbarfront, (5, 5), progressbarfront)

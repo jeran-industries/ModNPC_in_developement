@@ -4,7 +4,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats
 
 
 async def setupcommand(interaction, bot):
@@ -305,13 +305,31 @@ class Buttons4LevelsystemSetup(discord.ui.View):
         await deactivate_levelsystem(bot=self.bot, guildid=guild.id)
         embed = discord.Embed(title=f'Success', description=f"You deactivated the levelsystem commands.", color=discord.Color.red())
         await interaction.response.send_message(embed = embed, ephemeral=True)
+        
+    @discord.ui.button(label="Reset (This can't be undone)", custom_id="LevelsystemSetupReset", style=discord.ButtonStyle.red)
+    async def levelsystemsetupdereset(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        bot = self.bot
+        if interaction.user.id == guild.owner.id:
+            await reset_memberstats(bot=bot, guildid=guild.id)
+            #Set xp of every member to zero
+            embed = discord.Embed(title=f'Success', description=f"You reseted all memberstats of your guild.", color=discord.Color.green())
+            await interaction.response.send_message(embed = embed, ephemeral=False)
+        else:
+            embed = discord.Embed(title=f'Error', description=f"For doing this you need to be an owner.", color=discord.Color.dark_red())
+            await interaction.response.send_message(embed = embed, ephemeral=False)
+
+    @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
+    async def levelpingchannelsetup(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = discord.Embed(title=f'Set your levelpingchannel in this dropdownmenu:', color=discord.Color.light_grey())
+        await interaction.response.send_message(embed = embed, ephemeral=False, view = ViewLevelPingSetup())
     
-    @discord.ui.button(label="Add a levelrole", custom_id="AddALevelroleSetup", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="Add a levelrole", custom_id="AddALevelroleSetup", style=discord.ButtonStyle.grey, row=2)
     async def addalevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(title=f'Add a new levelrole by setting the right level, the roleid and if it should be removed as soon you reach a new level:', color=discord.Color.light_grey())
         await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelroleSelect(bot=self.bot))
 
-    @discord.ui.button(label="Remove a levelrole", custom_id="RemoveALevelroleSetup", style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="Remove a levelrole", custom_id="RemoveALevelroleSetup", style=discord.ButtonStyle.grey, row=2)
     async def removealevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         bot = self.bot
         guild = interaction.guild
@@ -332,31 +350,6 @@ class Buttons4LevelsystemSetup(discord.ui.View):
                 labellist.append(discord.SelectOption(label=levelrole.name, value=levelrole.id),)
             print(labellist)
             await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(bot=bot, levelroleoptions = labellist))
-
-
-    @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
-    async def levelpingchannelsetup(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(title=f'Set your levelpingchannel in this dropdownmenu:', color=discord.Color.light_grey())
-        await interaction.response.send_message(embed = embed, ephemeral=False, view = ViewLevelPingSetup())
-
-    @discord.ui.button(label="Reset (This can't be undone)", custom_id="LevelsystemSetupReset", style=discord.ButtonStyle.red)
-    async def levelsystemsetupdereset(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        if interaction.user.id == guild.owner.id:
-            file_name = "./database/database.db"
-            connection = sqlite3.connect(file_name) #connect to polldatabase
-            cursor = connection.cursor()
-            cursor.execute("UPDATE membertable set messagessent = ? WHERE guildid = ?", (0, guild.id))
-            cursor.execute("UPDATE membertable set voicetime = ? WHERE guildid = ?", (0, guild.id))
-            cursor.execute("UPDATE membertable set xp = ? WHERE guildid = ?", (0, guild.id))
-            #Set xp of every member to zero
-            connection.commit()
-            connection.close()
-            embed = discord.Embed(title=f'Success', description=f"You reseted all memberstats of your guild.", color=discord.Color.green())
-            await interaction.response.send_message(embed = embed, ephemeral=False)
-        else:
-            embed = discord.Embed(title=f'Error', description=f"For doing this you need to be an owner.", color=discord.Color.dark_red())
-            await interaction.response.send_message(embed = embed, ephemeral=False)
 
 class LevelroleSelect(discord.ui.View):
     def __init__(self, bot):

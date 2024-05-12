@@ -19,18 +19,39 @@ async def delete_all_autoroles(bot, guildid):
     await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
 
 #levelsystem:
-async def change_xp_by(bot, guildid, memberid, xptomodify):
-    xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
-    if xp==None:
-        xp=0
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = {xp + xptomodify} WHERE guildid = {guildid} AND memberid = {memberid}")
-    return(xp)
+async def change_xp_by(bot, guildid, memberid, xptomodify, xptoset = None):
+    if xptoset is not None:
+        newxp = xptoset
+    else:
+        xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
+        if xp==None:
+            xp=0
+        newxp = xp + xptomodify
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = {newxp} WHERE guildid = {guildid} AND memberid = {memberid}")
+    return(newxp)
 
-async def update_voicetime(bot, guildid, memberid):
-    voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="voicetime")
-    if voicetime==None:
-        voicetime=0
+async def update_voicetime(bot, guildid, memberid, voicetimetomodify = None):
+    if voicetimetomodify is not None:
+        voicetime = voicetimetomodify-1
+    else:
+        voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="voicetime")
+        if voicetime==None:
+            voicetime=0
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = {voicetime + 1} WHERE guildid = {guildid} AND memberid = {memberid}")
+
+async def update_messagecounter(bot, guildid, memberid, messagecountertomodify = None):
+    if messagecountertomodify is not None:
+        messagessent = messagecountertomodify-1
+    else:
+        messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+        if messagessent is None:
+            messagessent = 0
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
+
+async def reset_memberstats(bot, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = 0 WHERE guildid = {guildid}")
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = 0 WHERE guildid = {guildid}")
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = 0 WHERE guildid = {guildid}")
 
 async def get_lastupvote(bot, guildid, memberid):
     lastupvote = await asqlite_pull_data(bot=bot, statement=f'SELECT last_upvote FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}', data_to_return="last_upvote")

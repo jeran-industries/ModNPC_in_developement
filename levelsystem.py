@@ -10,7 +10,7 @@ import unicodedata
 from membermanagement import new_member
 from link2id import channellink2channelid, channellink2guildid, link2channelid, link2messageid
 from checks import check4dm, check4dm_message
-from sqlitehandler import change_xp_by, get_lastupvote, update_voicetime, update_lastupvote, asqlite_insert_data, asqlite_pull_data, asqlite_update_data
+from sqlitehandler import change_xp_by, get_lastupvote, update_voicetime, update_lastupvote, update_messagecounter ,asqlite_insert_data, asqlite_pull_data, asqlite_update_data
 
 async def new_message(bot, message): #make messagecounter bigger in json file bigger
     #v1:
@@ -47,10 +47,7 @@ async def new_message(bot, message): #make messagecounter bigger in json file bi
             xptomodify=floor(len(message.content)/20)+1
             #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
             for guildid in guildids:
-                messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
-                if messagessent is None:
-                    messagessent = 0
-                await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
+                await update_messagecounter(bot=bot, guildid=guildid, memberid=member.id)
 
                 xp = await change_xp_by(bot=bot, guildid=guildid, memberid=member.id, xptomodify=xptomodify)
                 

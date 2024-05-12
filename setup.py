@@ -4,7 +4,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, get_levelrole, create_levelrole, delete_levelrole
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids
 
 
 async def setupcommand(interaction, bot):
@@ -313,25 +313,25 @@ class Buttons4LevelsystemSetup(discord.ui.View):
 
     @discord.ui.button(label="Remove a levelrole", custom_id="RemoveALevelroleSetup", style=discord.ButtonStyle.grey)
     async def removealevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
-        connection = sqlite3.connect("./database/database.db") #connect to polldatabase
-        cursor = connection.cursor()
-        levelroleid = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (interaction.guild.id, )).fetchall()
-        #print(levelroleid)
-        connection.close()
-        if levelroleid is None:
+        bot = self.bot
+        guild = interaction.guild
+        checklevelrole = await check4levelroles(bot=bot, guildid=guild.id)
+        if checklevelrole == False:
             embed = discord.Embed(title=f'You dont have any levelroles yet.', color=discord.Color.light_grey())
             await interaction.response.send_message(embed = embed, ephemeral=True)
         else:
-            levelroleoptions = [item[0] for item in levelroleid]
+            #levelroleoptions = [item[0] for item in levelroleid]
             #print(levelroleoptions)
-            guild = interaction.guild
+            levelroleids=await get_all_levelroleids(bot=bot, guildid=guild.id)
+            print(levelroleids)
             embed = discord.Embed(title=f'Remove a levelrole by selecting it in the dropdownmenu:', color=discord.Color.light_grey())
             #role = discord.utils.get(guild.roles, id=roleid)
             labellist = []
-            for i in levelroleoptions:
-                role = discord.utils.get(guild.roles, id=i)
-                labellist.append(discord.SelectOption(label=role.name, value=role.id))
-            await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(bot=self.bot, levelroleoptions = labellist))
+            for levelroleid in levelroleids:
+                levelrole = discord.utils.get(guild.roles, id=levelroleid)
+                labellist.append(discord.SelectOption(label=levelrole.name, value=levelrole.id),)
+            print(labellist)
+            await interaction.response.send_message(embed = embed, ephemeral=True, view=LevelRole2RemoveSelect(bot=bot, levelroleoptions = labellist))
 
 
     @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
@@ -381,7 +381,7 @@ class LevelroleLevelModal(discord.ui.Modal, title="At which level do you get the
     sth = discord.ui.TextInput(label=f"Enter the level", placeholder="Enter the level, at which a member achieves the role", style=discord.TextStyle.short)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(view=KeepRoleSelect(bot=self.bot, role=self.role, level=self.sth))
+        await interaction.response.send_message(view=KeepRoleSelect(bot=self.bot, role=self.role, level=self.sth), ephemeral=True)
 
 class KeepRoleSelectMenu(discord.ui.Select):
     def __init__(self, bot, role, level):
@@ -399,14 +399,14 @@ class KeepRoleSelectMenu(discord.ui.Select):
         level = self.level
         bot = self.bot
         if self.values[0] == 'The member can keep the role':
-            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = True))
+            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = True), ephemeral=True)
         elif self.values[0] == "The member can't keep the role":
-            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can't keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = False))
+            await interaction.response.send_message(content=f"You want to create a levelrole with the role {role[0].name} at the level {level}. The member can't keep the role after getting the next levelrole.", view=CreateLevelrole(bot=self.bot, role=self.role, level=self.level, keeprole = False), ephemeral=True)
 
 class KeepRoleSelect(discord.ui.View):
-    def __init__(self, role, level):
+    def __init__(self, bot, role, level):
         super().__init__()
-        self.add_item(KeepRoleSelectMenu(role=role, level=level))
+        self.add_item(KeepRoleSelectMenu(bot=bot, role=role, level=level))
 
 class CreateLevelrole(discord.ui.View):
     def __init__(self, bot, role, level, keeprole):
@@ -419,11 +419,11 @@ class CreateLevelrole(discord.ui.View):
     @discord.ui.button(label="Create", custom_id="create")
     async def createselfrolebutton(self, interaction: discord.Interaction, button: discord.ui.button):
         roleid = int(self.role[0].id)
-        if await get_levelrole(bot=bot, roleid=roleid) == True: 
+        bot=self.bot
+        if await get_levelrole(bot=bot, roleid=roleid) == False: 
             guildid=interaction.guild.id
             level=self.level
             keeprole=self.keeprole
-            bot=self.bot
             await create_levelrole(bot=bot, guildid=guildid, roleid=roleid, level=level, keeprole=keeprole)
             await interaction.response.send_message(f"Success the levelrole was created.", ephemeral=True)
         else:
@@ -444,7 +444,7 @@ class LevelRole2RemoveSelectMenu(discord.ui.Select):
         self.bot = bot
         super().__init__(placeholder="Select the levelrole to remove it", options=levelroleoptions)
 
-    async def callback(self, interaction: discord.Interaction, bot):
+    async def callback(self, interaction: discord.Interaction):
         await delete_levelrole(bot=self.bot, roleid=self.values[0])
         await interaction.response.send_message(content=f"Success the levelrole was deleted.", ephemeral=True)
 

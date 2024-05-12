@@ -49,7 +49,19 @@ async def update_levelingpingchannel(bot, channelid, guildid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingpingmessagechannel = {channelid} WHERE guildid = {guildid}")
 
 async def get_levelrole(bot, roleid):
-    await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE roleid = {roleid}", data_to_return="roleid")
+    roleid=await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE roleid = {roleid}", data_to_return="roleid")
+    if roleid is None:
+        return(False)
+    else:
+        return(True)
+
+async def get_all_levelroleids(bot, guildid):
+    #levelroleids = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (interaction.guild.id, )).fetchall()
+    roleids=await asqlite_pull_all_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid}", data_to_return="roleid")
+    return(roleids)
+
+async def check4levelroles(bot, guildid):
+    roleid=await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid}", data_to_return="roleid")
     if roleid is None:
         return(False)
     else:

@@ -1,5 +1,8 @@
 import asqlite
 
+#anounymous messages:
+
+
 #autoroles:
 async def get_autorole(bot, membergroup, roleid):
     roleid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM autorole WHERE roleid = {roleid} AND membergroup = {membergroup}', data_to_return="roleid")
@@ -43,10 +46,10 @@ async def update_messagecounter(bot, guildid, memberid, messagecountertomodify =
     if messagecountertomodify is not None:
         messagessent = messagecountertomodify-1
     else:
-        messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+        messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="messagessent")
         if messagessent is None:
             messagessent = 0
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {member.id}")
+    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {memberid}")
 
 async def reset_memberstats(bot, guildid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = 0 WHERE guildid = {guildid}")

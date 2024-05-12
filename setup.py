@@ -4,7 +4,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel
 
 
 async def setupcommand(interaction, bot):
@@ -322,7 +322,7 @@ class Buttons4LevelsystemSetup(discord.ui.View):
     @discord.ui.button(label="Set Levelping Channel", custom_id="LevelpingChannelSetup", style=discord.ButtonStyle.grey)
     async def levelpingchannelsetup(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(title=f'Set your levelpingchannel in this dropdownmenu:', color=discord.Color.light_grey())
-        await interaction.response.send_message(embed = embed, ephemeral=False, view = ViewLevelPingSetup())
+        await interaction.response.send_message(embed = embed, ephemeral=True, view = ViewLevelPingSetup(bot=self.bot))
     
     @discord.ui.button(label="Add a levelrole", custom_id="AddALevelroleSetup", style=discord.ButtonStyle.grey, row=2)
     async def addalevelrolesetup(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -441,28 +441,6 @@ class LevelRole2RemoveSelectMenu(discord.ui.Select):
         await delete_levelrole(bot=self.bot, roleid=self.values[0])
         await interaction.response.send_message(content=f"Success the levelrole was deleted.", ephemeral=True)
 
-class ViewLevelReset(discord.ui.View): #in developement
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(MentionableSelectLevelReset())
-
-class MentionableSelectLevelReset(discord.ui.MentionableSelect):
-    def __init__(self, custom_id = "mentionableselectlevelreset"):
-        super().__init__(placeholder="Choose which member stats should be reseted.", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
-
-    async def callback(self, interaction: discord.Interaction):
-        channel = self.values[0]
-        guild = interaction.guild
-        file_name = "./database/database.db"
-        connection = sqlite3.connect(file_name) #connect to polldatabase
-        cursor = connection.cursor()
-        print(f"{guild.id} || {channel.id}")
-        cursor.execute("UPDATE guildsetup set levelingpingmessagechannel = ? WHERE guildid = ?", (channel.id, guild.id))
-        connection.commit()
-        connection.close()
-        embed = discord.Embed(title=f'Success', description=f"The levelingpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
-        await interaction.response.send_message(embed = embed, ephemeral=True)
-
 class ViewLevelPingSetup(discord.ui.View):
     def __init__(self, bot):
         super().__init__(timeout=None)
@@ -476,14 +454,7 @@ class ChannelSelectLevelPingSetup(discord.ui.ChannelSelect):
         channel = self.values[0]
         guild = interaction.guild
         bot = interaction.client
-        #try:
-        file_name = "./database/database.db"
-        connection = sqlite3.connect(file_name) #connect to polldatabase
-        cursor = connection.cursor()
-        #print(f"{guild.id} || {channel.id}")
-        cursor.execute("UPDATE guildsetup set levelingpingmessagechannel = ? WHERE guildid = ?", (channel.id, guild.id))
-        connection.commit()
-        connection.close()
+        await update_levelingpingchannel(bot=bot, channelid=channel.id, guildid=guild.id)
         embed = discord.Embed(title=f'Success', description=f"The levelpingmessagechannel was set to https://discord.com/channels/{guild.id}/{channel.id}.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed, ephemeral=True)
 

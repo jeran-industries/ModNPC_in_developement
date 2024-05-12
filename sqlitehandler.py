@@ -125,6 +125,11 @@ async def get_selfrole_roleid(bot, messageid, emoji):
         roleid = None
     return(roleid)
 
+#welcomemessages:
+async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage):
+    #"INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage)
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO welcomemessagetable VALUES ({guildid}, {channelid}, {headerwelcomemessage}, {contentwelcomemessage})")
+
 #guildmanagement:
 async def check_4_guild(bot, guildid):
     data = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="guildid")

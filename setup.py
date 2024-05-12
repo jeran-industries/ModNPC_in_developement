@@ -4,7 +4,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage
 
 
 async def setupcommand(interaction, bot):
@@ -557,11 +557,7 @@ class WelcomemessageConfirmation(discord.ui.View):
         channelid = int(self.channel[0].id)
         headerwelcomemessage = self.headerwelcomemessage.value
         contentwelcomemessage = self.contentwelcomemessage.value
-        connection = sqlite3.connect("./database/database.db")
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage))
-        connection.commit()
-        connection.close()
+        await insert_into_welcomemessage(bot=interaction.client, guildid=interaction.guild.id, channelid=channelid, headerwelcomemessage=headerwelcomemessage, contentwelcomemessage=contentwelcomemessage)
         await interaction.response.send_message(f"Success the welcomemessage was created. \n| {channelid} |\n| {headerwelcomemessage} |\n| {contentwelcomemessage} |", ephemeral=True)
 
     @discord.ui.button(label="DiscardWelcomemessage", custom_id="discardwelcomemessage")

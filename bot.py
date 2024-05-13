@@ -45,7 +45,9 @@ BETA_CLIENT_ID = os.getenv('Client_id_beta')
 DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
-MEMBERLOGCHANNELID = os.getenv('')
+LOGCHANNELID = os.getenv()
+MEMBERLOGCHANNELID = os.getenv('Member_log_channel_ID')
+REPORTCHANNELID = os.getenv('Report_channel_ID')
 DBLOGCHANNELID = os.getenv('')
 
 #bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
@@ -65,18 +67,6 @@ class MyBot(commands.Bot):
         
 bot = MyBot()
 
-@bot.command()
-async def asqlitetester(ctx):
-    async with asqlite.Pool.acquire(bot.pool) as connection:
-        #xp = await asqlite_pull_data(bot=bot, statement=f"SELECT xp FROM membertable WHERE guildid = {ctx.guild.id} AND memberid = {ctx.author.id}", data_to_return="xp")
-        #xpcursor = (await connection.execute("SELECT xp FROM membertable WHERE guildid = ? AND memberid = ?", (ctx.guild.id, ctx.author.id)))
-        #await ctx.reply(xpcursor)
-        #xp = (await xpcursor.fetchone())["xp"]
-        countercursor = await connection.execute("SELECT COUNT(*) FROM membertable WHERE guildid = ?", (ctx.guild.id))
-        counter = await countercursor.fetchone()
-        counter = counter[0]
-        await ctx.reply(counter)
-
 #tracemalloc.start()
 handler = logging.FileHandler(filename='./database/discord.log', encoding='utf-8')
 sys.path.append('.')
@@ -84,7 +74,7 @@ sys.path.append('.')
 #Welcome-Message
 @bot.event
 async def on_member_join(member):
-    channel = bot.get_channel(1184497343815499898)
+    channel = bot.get_channel(MEMBERLOGCHANNELID)
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     await channel.send(embed=embed)
     #await sendwelcomemessage(member, bot)
@@ -370,14 +360,27 @@ async def on_raw_reaction_remove(payload): #reactionremoved trigger
 @bot.event
 async def on_guild_join(guild):
     await database_checking_and_creating(bot, guild.id)
-    channel = bot.get_channel(1184497343815499898)
+    channel = bot.get_channel(MEMBERLOGCHANNELID)
     for channel in guild.channels:
-        inviteurl = await channel.create_invite()
-        break
+        try:
+            inviteurl = await channel.create_invite()
+            break
+        except:
+            pass
     embed = discord.Embed(title="New guild!", description=f"{member.guild.name} just joined the system: {inviteurl}")
+    embed.add_field(name="Guildowner", name=guild.owner)
+    embed.add_field(name="Membercount", name=guild.member_count)
     await channel.send(embed=embed)
     for member in guild.members:
         new_member(member)
+
+@bot.event
+async def on_guild_remove(guild):
+    channel = bot.get_channel(MEMBERLOGCHANNELID)
+    embed = discord.Embed(title="Guild left!", description=f"{member.guild.name} just left the system.")
+    embed.add_field(name="Guildowner", name=guild.owner)
+    embed.add_field(name="Membercount", name=guild.member_count)
+    await channel.send(embed=embed)
 
 @bot.event
 async def on_ready():
@@ -414,10 +417,18 @@ async def on_ready():
 
 #Do u want to debug?
 debug = None
-debug = input("Please enter ""debug"", if you want to run the beta of this bot. If not enter something else:\n")
-if debug == "debug":
-    bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
-else:
+
+if BETA_TOKEN is None and TOKEN is None:
+    print("Hmm looks like the .env file is corrupted or sth like that. Run this command in the terminal on windows python createdotenv.py or on linux python3 createdotenv.py")
+elif BETA_TOKEN is None and TOKEN is not None:
     bot.run(TOKEN, log_handler=handler)
+elif BETA_TOKEN is not None and TOKEN is None:
+    bot.run(BETA_TOKEN, log_level=logging.DEBUG)  
+else:
+    debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
+    if debug == "debug":
+        bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
+    else:
+        bot.run(TOKEN, log_handler=handler)
 
 #runs after bot is out

@@ -34,6 +34,7 @@ class SelectStartMenu(discord.ui.Select):
             discord.SelectOption(label='Custom VCs', description='You can activate and deactivate custom voicechats.'),
             discord.SelectOption(label='Levelsystem', description='You can (de)activate the levelsystem, set the levelpingchannel, add and remove xp.'),
             discord.SelectOption(label='Logging', description='You can (de)activate the logging and set the loggingchannel.'),
+            #discord.SelectOption(label='Ticketsystem', description='You can de(activate) the ticketsystem and select a channel for the ticketsystem.'),
             discord.SelectOption(label='Welcomemessages', description='You can (de)activate, set the welcomemessages and the channel where the message will be sent.'),
         ]
         super().__init__(placeholder="Choose what you want to change", options=options)
@@ -54,6 +55,8 @@ class SelectStartMenu(discord.ui.Select):
             await levelsystemsetup(interaction, bot)
         elif result == "Logging":
             await logsetup(interaction, bot)
+        elif result == "Ticketsystem":
+            await ticketsystemsetup(interaction)
         elif result == "Welcomemessages":
             await welcomemessagessetup(interaction)
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
@@ -160,6 +163,9 @@ class SelectAutoRoleUserGroupSetup(discord.ui.Select):
         guild = interaction.guild
         #all(0) usergroups: bot(1) and humanusers(2)
         membergroups=[0, 1, 2]
+        roleidsallusers=None
+        roleidsallbotusers=None
+        roleidsallhumanusers=None
 
         for membergroup in membergroups:
             if membergroup == 0:
@@ -516,6 +522,38 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
         except:
             embed = discord.Embed(title = f"Hmm something went wrong", description = f"Please activate these permissions: \n`view channel`\n`manage webhooks`\n`send messages`\n`send messages in threads`\n`create public threads`")
         await interaction.followup.send(embed = embed, ephemeral = True)
+
+async def ticketsystemsetup(interaction: discord.Interaction):
+    embed= discord.Embed(title=f"Here you can activate.")
+    await interaction.response.send_message(embed=embed, view=activateticketsystemsetupview(), ephemeral = True)
+    
+
+class activateticketsystemsetupview(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Activate", custom_id="activateticketsystem")
+    async def ActivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        pass
+
+    @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
+    async def SelectChannelActivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        await SelectChannelScript(interaction)
+
+class deactivateticketsystemsetupview(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Deactivate", custom_id="deactivateticketsystem")
+    async def DeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        pass
+
+    @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
+    async def SelectChannelDeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        await SelectChannelScript(interaction)
+
+async def SelectChannelScript(interaction):
+    print("")
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

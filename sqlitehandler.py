@@ -16,7 +16,7 @@ async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE autorole set membergroup = {membergroup} WHERE roleid = {roleid}")
 
 async def insert_autorole(bot, guildid, roleid, membergroup):
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO autorole VALUES ({guild_id}, {roleid}, {membergroup})")
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO autorole VALUES ({guildid}, {roleid}, {membergroup})")
 
 async def delete_all_autoroles(bot, guildid):
     await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
@@ -156,7 +156,7 @@ async def insert_into_guildtable(bot, guildid):
 #creating tables:
 async def create_guildsetup_table(bot):
     #botupdatestatus BOOL, botupdatechannelid INTEGER)"
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER)")
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, ticketsystemstatus BOOL, ticketsystemchannel INTEGER)")
 
 async def create_autorole_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")

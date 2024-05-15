@@ -29,6 +29,21 @@ async def database_checking_and_creating(bot, guildid):
         pass
 
     try:
+        cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE guildsetup ADD ticketsystemstatus BOOL")
+    except:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE guildsetup ADD ticketsystemchannel BOOL")
+    except:
+        pass
+
+    try:
         cursor.execute("ALTER TABLE membertable ADD last_upvote INTEGER")
     except:
         pass

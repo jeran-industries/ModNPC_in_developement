@@ -19,7 +19,7 @@ from sqlitehandler import insert_into_selfroles, insert_into_selfrole_options, g
 async def create_selfrole(interaction, content, channeltopostin): #create a new reactionrole
     if await check4dm(interaction) == False:
         member = interaction.user
-        bot = interaction.client.user
+        bot = interaction.client
         guildid = interaction.guild.id
         if member.guild_permissions.manage_roles:
             embed = discord.Embed(title=f'Selfroles:', description=f'{content}', color=discord.Color.green())
@@ -90,7 +90,7 @@ async def add_selfrole(interaction, bot, link, emoji, role, description):
                         embed.add_field(name = f"{emoji} || {role}", value = description, inline = False) #adds a new field to the embedded message for each option
                     await message.edit(embed=embed) #sending all the fields
                     await message.add_reaction(emoji) #adding the reaction to message
-                    await insert_into_selfrole_options(bot=bot, messageid=messageid, emoji=emoji, roleid=role.id)
+                    await insert_into_selfrole_options(bot=bot, messageid=messageid, emoji=emoji, roleid=role.id, description=description)
                     await interaction.response.send_message("**SUCCESS** \nReactionrole was added.", ephemeral=True)
                 else:
                     await interaction.response.send_message("This reactionrole was already added.", ephemeral=True)
@@ -136,10 +136,10 @@ async def add_selfrole_2_member(bot, payload):
             message = await channel.get_partial_message(messageid).fetch() #getting the message to add a reaction so the user can more easy react
             if memberid != bot.user.id:
                 await message.remove_reaction(emoji, member)
-        else:
-            channelid = payload.channel_id
-            channel = await bot.fetch_channel(channelid) #getting the channel from the message
-            await channel.send(f"<@{memberid}> There is an error due to problems saving the data in the database. Please ask the staff of the server to redo the reactionroles.")
+        #else:
+        #    channelid = payload.channel_id
+        #    channel = await bot.fetch_channel(channelid) #getting the channel from the message
+        #    await channel.send(f"<@{memberid}> There is an error due to problems saving the data in the database. Please ask the staff of the server to redo the reactionroles.")
     #v1:
     #message_id = payload.message_id
     #member_id = payload.user_id

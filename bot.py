@@ -45,7 +45,6 @@ BETA_CLIENT_ID = os.getenv('Client_id_beta')
 DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
-LOGCHANNELID = os.getenv()
 MEMBERLOGCHANNELID = os.getenv('Member_log_channel_ID')
 REPORTCHANNELID = os.getenv('Report_channel_ID')
 DBLOGCHANNELID = os.getenv('')
@@ -368,8 +367,8 @@ async def on_guild_join(guild):
         except:
             pass
     embed = discord.Embed(title="New guild!", description=f"{member.guild.name} just joined the system: {inviteurl}")
-    embed.add_field(name="Guildowner", name=guild.owner)
-    embed.add_field(name="Membercount", name=guild.member_count)
+    embed.add_field(name="Guildowner", value=guild.owner.name)
+    embed.add_field(name="Membercount", value=guild.member_count)
     await channel.send(embed=embed)
     for member in guild.members:
         new_member(member)
@@ -378,8 +377,8 @@ async def on_guild_join(guild):
 async def on_guild_remove(guild):
     channel = bot.get_channel(MEMBERLOGCHANNELID)
     embed = discord.Embed(title="Guild left!", description=f"{member.guild.name} just left the system.")
-    embed.add_field(name="Guildowner", name=guild.owner)
-    embed.add_field(name="Membercount", name=guild.member_count)
+    embed.add_field(name="Guildowner", value=guild.owner.name)
+    embed.add_field(name="Membercount", value=guild.member_count)
     await channel.send(embed=embed)
 
 @bot.event
@@ -423,11 +422,11 @@ if BETA_TOKEN is None and TOKEN is None:
 elif BETA_TOKEN is None and TOKEN is not None:
     bot.run(TOKEN, log_handler=handler)
 elif BETA_TOKEN is not None and TOKEN is None:
-    bot.run(BETA_TOKEN, log_level=logging.DEBUG)  
+    bot.run(BETA_TOKEN, log_level=logging.DEBUG)
 else:
     debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
     if debug == "debug":
-        bot.run(BETA_TOKEN, log_level=logging.DEBUG)    
+        bot.run(BETA_TOKEN, log_level=logging.DEBUG)
     else:
         bot.run(TOKEN, log_handler=handler)
 

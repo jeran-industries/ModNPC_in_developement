@@ -22,6 +22,9 @@ async def delete_all_autoroles(bot, guildid):
     await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
 
 #levelsystem:
+#async def change_xp(bot, guildid, memberid, xptoset):
+#    pass
+
 async def change_xp_by(bot, guildid, memberid, xptomodify, xptoset = None):
     if xptoset is not None:
         newxp = xptoset
@@ -128,6 +131,23 @@ async def get_selfrole_roleid(bot, messageid, emoji):
         roleid = None
     return(roleid)
 
+#ticketsystem:
+async def activate_ticketsystem(bot, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = '{True}' WHERE guildid = {guildid}")
+
+async def deactivate_ticketsystem(bot, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = '{False}' WHERE guildid = {guildid}")
+
+async def update_channel_ticketsystem(bot, guildid, channelid):
+    if channelid is None:
+        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = 'None' WHERE guildid = {guildid}")
+    else:
+        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = {channelid} WHERE guildid = {guildid}")
+
+async def get_ticketsystem_status(bot, guildid):
+    ticketsystemstatus = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemstatus")
+    return(ticketsystemstatus)
+
 #welcomemessages:
 async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage):
     #"INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage)
@@ -151,7 +171,9 @@ async def insert_into_guildtable(bot, guildid):
     botupdatestatus=False
     botupdatechannelid=None
     logchannelid=None
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}')")
+    ticketsystemstatus=False
+    ticketsystemchannel=None
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}')")
 
 #creating tables:
 async def create_guildsetup_table(bot):
@@ -166,6 +188,10 @@ async def create_levelroles_table(bot):
 
 async def create_member_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT, last_upvote INTEGER)")
+
+#create indexes:
+async def create_unique_index_member_table(bot):
+    await asqlite_create_index(bot=bot, statement="CREATE UNIQUE INDEX IF NOT EXISTS membertable_guildid_memberid ON membertable(guildid, memberid)")
 
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):
@@ -211,6 +237,11 @@ async def asqlite_get_counter(bot, statement):
         return(counter)
 
 async def asqlite_delete(bot, statement):
+    async with bot.pool.acquire() as connection:
+        await connection.execute(statement)
+        await connection.commit()
+
+async def asqlite_create_index(bot, statement):
     async with bot.pool.acquire() as connection:
         await connection.execute(statement)
         await connection.commit()

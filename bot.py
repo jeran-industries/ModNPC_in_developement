@@ -35,6 +35,7 @@ from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
 from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table
+from ticketsystem import OpenTicketButton
 
 #from "dateiname" import "name der funktion"
 
@@ -60,6 +61,7 @@ class MyBot(commands.Bot):
         # Load the commands extension
         print("Running setup tasks")
         self.pool = await asqlite.create_pool(database="./database/database.db")
+        self.add_view(OpenTicketButton())
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")

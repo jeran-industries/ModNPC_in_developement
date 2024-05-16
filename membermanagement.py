@@ -41,4 +41,14 @@ async def new_member(member, bot): #new member -> new jsonfile with member_id
     time = int(round((datetime.now() - datetime(1970, 1, 1)).total_seconds()))
     if await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {member.guild.id} AND memberid = {member.id}", data_to_return="memberid") is None:
         status = "Joined"
-        await asqlite_insert_data(bot=bot, statement=f"INSERT INTO membertable VALUES ({member.guild.id}, {member.id}, {0}, {0}, {0}, {0}, {time}, {0})")
+        try:
+            await asqlite_insert_data(bot=bot, statement=f"INSERT INTO membertable VALUES ({member.guild.id}, {member.id}, {0}, {0}, {0}, {0}, {time}, {0})")
+        except:
+            pass
+    
+    if await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {0} AND memberid = {member.id}", data_to_return="memberid") is None:
+        status = "Joined"
+        try:
+            await asqlite_insert_data(bot=bot, statement=f"INSERT INTO membertable VALUES ({0}, {member.id}, {0}, {0}, {0}, {0}, {time}, {0})")
+        except:
+            pass

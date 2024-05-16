@@ -4,7 +4,8 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status
+from ticketsystem import OpenTicketButton
 
 
 async def setupcommand(interaction, bot):
@@ -34,7 +35,7 @@ class SelectStartMenu(discord.ui.Select):
             discord.SelectOption(label='Custom VCs', description='You can activate and deactivate custom voicechats.'),
             discord.SelectOption(label='Levelsystem', description='You can (de)activate the levelsystem, set the levelpingchannel, add and remove xp.'),
             discord.SelectOption(label='Logging', description='You can (de)activate the logging and set the loggingchannel.'),
-            #discord.SelectOption(label='Ticketsystem', description='You can de(activate) the ticketsystem and select a channel for the ticketsystem.'),
+            discord.SelectOption(label='Ticketsystem', description='You can de(activate) the ticketsystem and select a channel for the ticketsystem.'),
             discord.SelectOption(label='Welcomemessages', description='You can (de)activate, set the welcomemessages and the channel where the message will be sent.'),
         ]
         super().__init__(placeholder="Choose what you want to change", options=options)
@@ -524,10 +525,13 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
         await interaction.followup.send(embed = embed, ephemeral = True)
 
 async def ticketsystemsetup(interaction: discord.Interaction):
-    embed= discord.Embed(title=f"Here you can activate.")
+    bot = interaction.client
+    guild = interaction.guild
+    ticketsystem_status = await get_ticketsystem_status(bot=bot, guildid=guild.id)
+    if ticketsystem_status == True:
+        embed= discord.Embed(title=f"Here you can activate.")
     await interaction.response.send_message(embed=embed, view=activateticketsystemsetupview(), ephemeral = True)
     
-
 class activateticketsystemsetupview(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -538,7 +542,8 @@ class activateticketsystemsetupview(discord.ui.View):
 
     @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
     async def SelectChannelActivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
-        await SelectChannelScript(interaction)
+        embed=discord.Embed(title=f"Here you can open a ticket.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemView())
 
 class deactivateticketsystemsetupview(discord.ui.View):
     def __init__(self):
@@ -548,12 +553,28 @@ class deactivateticketsystemsetupview(discord.ui.View):
     async def DeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
         pass
 
-    @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
+    @discord.ui.button(label="Select", custom_id="ticketsystemchannelselect")
     async def SelectChannelDeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
-        await SelectChannelScript(interaction)
+        embed=discord.Embed(title=f"Here you can open a ticket.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemView())
 
-async def SelectChannelScript(interaction):
-    print("")
+class TicketsystemView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketsystemSelectChannel())
+    
+    @discord.ui.button(label="Create a channel", custom_id="deactivateticketsystem")
+    async def TicketsystemCreateChannel(self, interaction: discord.Interaction, button: discord.ui.button):
+        pass
+
+
+class TicketsystemSelectChannel(discord.ui.ChannelSelect):
+    def __init__(self):
+        super().__init__(placeholder="Just a test", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
+
+    async def callback(self, interaction: discord.Interaction):
+        channel = self.values[0]
+        await interaction.response.send_message(content=f"Sucessfully given you {channel}")
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

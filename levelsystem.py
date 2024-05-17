@@ -105,17 +105,21 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="xp")
 
     level = math.floor((xp ** 0.5) / 5) #f(x) = x^0.5 / 5 => 5 * f(x) = x^0.5 => log5 * f(x) (0.5) = x
-    # Create the embed
-    embed = discord.Embed(title=f'Level {level}', description=f'{xp} XP', color=discord.Color.green())
-    if member.bot:
-        embed.set_author(name=member.display_name)
-    else:
-        embed.set_author(name=member.display_name, icon_url=member.avatar.url)
     rank = await checkleaderboard(interaction, bot, member.id)
-    embed.add_field(name="Place:", value = f"#{rank}", inline=False)
-    embed.add_field(name="Voicetime:", value = str(voicetime) + " minutes", inline=False)
-    embed.add_field(name="Messages sent:", value = str(messagessent) + " messages", inline=False)
-    embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
+    
+
+    #for debugging can be used:
+    # Create the embed
+    #embed = discord.Embed(title=f'Level {level}', description=f'{xp} XP', color=discord.Color.green())
+    #if member.bot:
+    #    embed.set_author(name=member.display_name)
+    #else:
+    #    embed.set_author(name=member.display_name, icon_url=member.avatar.url)
+
+    #embed.add_field(name="Place:", value = f"#{rank}", inline=False)
+    #embed.add_field(name="Voicetime:", value = str(voicetime) + " minutes", inline=False)
+    #embed.add_field(name="Messages sent:", value = str(messagessent) + " messages", inline=False)
+    #embed.set_footer(text="Requested by: {}".format(interaction.user.display_name))
     
     # Send the embed
     #member.avatar.save("D:/Coding/Discordbot/ModNPC_in_developement/testfiles/rankcard/pfptest.png")

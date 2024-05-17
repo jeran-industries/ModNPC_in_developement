@@ -16,6 +16,7 @@ import math
 import aiohttp
 import aiosqlite
 import asqlite 
+from PIL import ImageFont
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -62,6 +63,7 @@ class MyBot(commands.Bot):
         print("Running setup tasks")
         self.pool = await asqlite.create_pool(database="./database/database.db")
         self.add_view(OpenTicketButton())
+        self.rankcard_font_arial = ImageFont.truetype("./textures/arial.ttf", 80)
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")

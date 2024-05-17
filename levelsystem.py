@@ -5,6 +5,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageShow
 from math import floor
 import unicodedata
+import contextlib
 
 #own modules:
 from membermanagement import new_member
@@ -120,10 +121,11 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     #member.avatar.save("D:/Coding/Discordbot/ModNPC_in_developement/testfiles/rankcard/pfptest.png")
     await member.display_avatar.save(fp=f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
     #print(f"\n{file}\n")
-    rankcardgenerator(member.display_name, member.id, rank, xp, level, guildid)
+    bot = interaction.client
+    rankcardgenerator(bot, member.display_name, member.id, rank, xp, level, guildid)
     file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
     #await interaction.followup.send(file = file, view=rankcardbuttons(bot, owner=member, rankcard=file))
-    await interaction.followup.send(embed=embed)
+    await interaction.followup.send(file=file)
 
     #v1:
     #server_id = ctx.guild.id
@@ -323,102 +325,100 @@ async def claimcommand(interaction):
     embed = discord.Embed(title="Thanks for upvoting!!!", description="Here is the link to upvote: https://discordbotlist.com/bots/modnpc/upvote")
     await interaction.response.send_message(embed=embed)
 
-def rankcardgenerator(username, memberid, rank, xp, level, guildid):
-    # Load the background image (replace with your own image)
+def rankcardgenerator(bot, username, memberid, rank, xp, level, guildid):
     background_image_path = f"database/rankcards/backgrounds/{guildid}/{memberid}.png" #2400x600
     if os.path.exists(background_image_path):
-        background_image = Image.open(background_image_path).convert("RGBA")
+        pass
     else:
-        background_image = Image.new('RGB', (2400, 600), color='black')
-        background_image.putalpha(0)
+        background_image_path = "./textures/background.png"
 
-    pfp = Image.open(f"./database/rankcards/profilepictures/{guildid}/{memberid}.png").convert("RGBA")
-    #pfp = avatarfile.convert("RGBA")
-    #pfp = pfp.resize((480, 480))
-    pfp = ImageOps.fit(pfp, (480, 480), method=Image.Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))
-    offset = 0
-    blur_radius = 5
-    offset = blur_radius * 2 + offset
-    mask = Image.new("L", pfp.size, 0)
-    draw = ImageDraw.Draw(mask)
-    draw.ellipse((offset, offset, pfp.size[0] - offset, pfp.size[1] - offset), fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(blur_radius))
-
-    pfp = pfp.copy()
-    pfp.putalpha(mask)
-
-    background_image.paste(pfp, (75, 75), pfp)
-
-    progressbarfront = Image.open("./textures/progressbarfront.png").convert("RGBA")
-
-    # Load a font (choose a font of your preference)
-    font_path = "./textures/arial.ttf"
-    font_size = 80
-    font = ImageFont.truetype(font_path, font_size)
-
-    # User's rank details (customize as needed)
-    user_name = unicodedata.normalize("NFKD", username)
-    user_rank = rank+1
-    old_level = level
-    new_level = level + 1
-    percent = (xp - 25 * old_level**2) / (25 * new_level**2 - 25 * old_level**2) * 100#x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
-    percent = math.floor(percent)
+    with Image.open(background_image_path).convert("RGBA") as background_image: # Load the background image
         
-    percent_position = (837, 45)
+        pfp = Image.open(f"./database/rankcards/profilepictures/{guildid}/{memberid}.png").convert("RGBA")
+        #pfp = avatarfile.convert("RGBA")
+        #pfp = pfp.resize((480, 480))
+        pfp = ImageOps.fit(pfp, (480, 480), method=Image.Resampling.BICUBIC, bleed=0.0, centering=(0.5, 0.5))
+        offset = 0
+        blur_radius = 5
+        offset = blur_radius * 2 + offset
+        mask = Image.new("L", pfp.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((offset, offset, pfp.size[0] - offset, pfp.size[1] - offset), fill=255)
+        mask = mask.filter(ImageFilter.GaussianBlur(blur_radius))
+
+        pfp = pfp.copy()
+        pfp.putalpha(mask)
+
+        background_image.paste(pfp, (75, 75), pfp)
+
+        progressbarfront = Image.open("./textures/progressbarfront.png").convert("RGBA")
 
 
-    # change width of progress bar based on percentage
-    progressbarfront = progressbarfront.resize((1675, 80))
-    progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.001) / 100), progressbarfront.size[1]))
-    progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
-    progressbar = progressbar.resize((1675, 80))
-    progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
-    progressbar.paste(progressbarfront, (5, 5), progressbarfront)
-    drawprogressbar = ImageDraw.Draw(progressbar)
-    drawprogressbar.text(percent_position, f"{percent}%", fill="white", anchor="mm", font=font)
-    if old_level/10 >= 1:
-        if old_level/100 >= 1:
-            if old_level/1000 >= 1:
-                pass
+        font = bot.rankcard_font_arial
+
+        # User's rank details (customize as needed)
+        user_name = unicodedata.normalize("NFKD", username)
+        user_rank = rank+1
+        old_level = level
+        new_level = level + 1
+        percent = (xp - 25 * old_level**2) / (25 * new_level**2 - 25 * old_level**2) * 100#x=xp, a=newlevel, b=oldlevel; xp/(25a² - 25b²)
+        percent = math.floor(percent)
+        
+        percent_position = (837, 45)
+
+
+        # change width of progress bar based on percentage
+        progressbarfront = progressbarfront.resize((1675, 80))
+        progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.001) / 100), progressbarfront.size[1]))
+        progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
+        progressbar = progressbar.resize((1675, 80))    
+        progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))
+        progressbar.paste(progressbarfront, (5, 5), progressbarfront)
+        drawprogressbar = ImageDraw.Draw(progressbar)
+        drawprogressbar.text(percent_position, f"{percent}%", fill="white", anchor="mm", font=font)
+        if old_level/10 >= 1:
+            if old_level/100 >= 1:
+                if old_level/1000 >= 1:
+                    pass
+                else:
+                    old_level_position = (100, 0)
             else:
-                old_level_position = (100, 0)
+                old_level_position = (60, 0)
         else:
-            old_level_position = (60, 0)
-    else:
-        old_level_position = (20, 0)
-    drawprogressbar.text(old_level_position, f"{old_level}", fill="white", font=font)
+            old_level_position = (20, 0)
+        drawprogressbar.text(old_level_position, f"{old_level}", fill="white", font=font)
 
-    if new_level/10 >= 1:
-        if new_level/100 >= 1:
-            if new_level/1000 >= 1:
-                pass
+        if new_level/10 >= 1:
+            if new_level/100 >= 1:
+                if new_level/1000 >= 1:
+                    pass
+                else:
+                    new_level_position = (1535, 0)
             else:
-                new_level_position = (1535, 0)
+                new_level_position = (1575, 0)
         else:
-            new_level_position = (1575, 0)
-    else:
-        new_level_position = (1615, 0)
-    drawprogressbar.text(new_level_position, f"{new_level}", fill="white", font=font)
+            new_level_position = (1615, 0)
+        drawprogressbar.text(new_level_position, f"{new_level}", fill="white", font=font)
 
-    # draw progress bar from x,y 50 of background image
-    background_image.paste(progressbar, (630, 400), progressbar)
+        # draw progress bar from x,y 50 of background image
+        background_image.paste(progressbar, (630, 400), progressbar)
 
-    # Create a drawing context
-    draw = ImageDraw.Draw(background_image)
+        # Create a drawing context
+        draw = ImageDraw.Draw(background_image)
 
-    # Position to draw the user's name
-    name_position = (630, 150)
-    draw.text(name_position, f"{user_name}", fill="white", font=font)
+        # Position to draw the user's name
+        name_position = (630, 150)
+        draw.text(name_position, f"{user_name}", fill="white", font=font)
 
-    # Position to draw the user's rank
-    rank_position = (630, 225)
-    draw.text(rank_position, f"Rank: #{user_rank}", fill="white", font=font)
+        # Position to draw the user's rank
+        rank_position = (630, 225)
+        draw.text(rank_position, f"Rank: #{user_rank}", fill="white", font=font)
 
-    # Position to draw the user's score
-    total_xp_position = (630, 300)
-    draw.text(total_xp_position, f"Total XP: {xp}", fill="white", font=font)
+        # Position to draw the user's score
+        total_xp_position = (630, 300)
+        draw.text(total_xp_position, f"Total XP: {xp}", fill="white", font=font)
 
-    background_image.save(f"./database/rankcards/generated/{guildid}/{memberid}.png")
+        background_image.save(f"./database/rankcards/generated/{guildid}/{memberid}.png")
 
 class rankcardbuttons(discord.ui.View):
     def __init__(self, bot, owner, rankcard):

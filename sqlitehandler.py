@@ -148,7 +148,7 @@ async def update_opentickets_category_ticketsystem(bot, guildid, categoryid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemopencategoryid = {categoryid} WHERE guildid = {guildid}")
 
 async def update_closedtickets_category_ticketsystem(bot, guildid, categoryid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemcloseddcategoryid = {categoryid} WHERE guildid = {guildid}")
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemclosedcategoryid = {categoryid} WHERE guildid = {guildid}")
 
 async def get_opentickets_categoryid(bot, guildid):
     opentickets_categoryid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemopencategoryid")
@@ -161,6 +161,26 @@ async def get_closedtickets_categoryid(bot, guildid):
 async def get_ticketsystem_status(bot, guildid):
     ticketsystemstatus = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemstatus")
     return(ticketsystemstatus)
+
+async def insert_into_tickettable(bot, guildid, channelid, creatorid):
+    #ticketsystemtable (guildid INTEGER, ticketid INTEGER, ticketstatus INTEGER, creatorid INTEGER, claimerid INTEGER
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO ticketsystemtable VALUES ({guildid}, {channelid}, {0}, {creatorid}, {0})")
+
+async def update_ticket_status(bot, ticketid, status, claimerid = None):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE ticketsystemtable set ticketstatus = {status} WHERE ticketid = {ticketid}")
+    if claimerid is not None:
+        await asqlite_update_data(bot=bot, statement=f"UPDATE ticketsystemtable set claimerid = {claimerid} WHERE ticketid = {ticketid}")
+
+async def get_creatorid_ticket(bot, ticketid):
+    creatorid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM ticketsystemtable WHERE ticketid = {ticketid}", data_to_return="creatorid")
+    return(creatorid)
+
+async def get_claimerid_ticket(bot, ticketid):
+    claimerid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM ticketsystemtable WHERE ticketid = {ticketid}", data_to_return="claimerid")
+    return(claimerid)
+
+#async def ticketsystempermissions(bot, memberid = None, roleid = None):
+
 
 #welcomemessages:
 async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage):
@@ -204,6 +224,9 @@ async def create_levelroles_table(bot):
 
 async def create_member_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS membertable (guildid INTEGER, memberid INTEGER, messagessent INTEGER, voicetime INTEGER, xp INTEGER, status TEXT, joinedintosystem TEXT, last_upvote INTEGER)")
+
+async def create_ticketsystemtable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS ticketsystemtable (guildid INTEGER, ticketid INTEGER, ticketstatus INTEGER, creatorid INTEGER, claimerid INTEGER)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
 
 #create indexes:
 async def create_unique_index_member_table(bot):

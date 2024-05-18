@@ -35,8 +35,8 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table
-from ticketsystem import OpenTicketButton
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable
+from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
 
 #from "dateiname" import "name der funktion"
 
@@ -67,6 +67,7 @@ class MyBot(commands.Bot):
         print("Running setup tasks")
         self.pool = await asqlite.create_pool(database="./database/database.db")
         self.add_view(OpenTicketButton())
+        self.add_view(Unclaimedticketbuttons())
         #self.rankcard_font_arial = ImageFont.truetype("./textures/arial.ttf", 80)
         self.font = font()
         one_minute_loop.start()
@@ -405,6 +406,7 @@ async def on_ready():
     await create_levelroles_table(bot=bot)
     await create_member_table(bot=bot)
     await create_unique_index_member_table(bot=bot)
+    await create_ticketsystemtable(bot=bot)
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')

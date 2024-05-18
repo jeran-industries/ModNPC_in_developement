@@ -5,7 +5,7 @@ import io
 import sqlite3
 
 #own modules:
-from sqlitehandler import insert_into_guildtable, check_4_guild, create_guildsetup_table, add_columns
+from sqlitehandler import insert_into_guildtable, check_4_guild, create_guildsetup_table, create_ticketsystemtable, add_columns
 
 async def database_checking_and_creating(bot, guildid):
     file_name = "./database/database.db"

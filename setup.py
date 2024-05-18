@@ -575,7 +575,7 @@ class TicketsystemChannelView(discord.ui.View):
 
 class TicketsystemChannelSelectChannel(discord.ui.ChannelSelect):
     def __init__(self):
-        super().__init__(placeholder="Just a test", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
+        super().__init__(placeholder="Enter the channel where you can start a ticket", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
 
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
@@ -588,7 +588,7 @@ class TicketsystemChannelSelectChannel(discord.ui.ChannelSelect):
                 testembed = discord.Embed(title="Testembed")
                 testmessage = await channel.send(embed = testembed)
                 await testmessage.delete()
-            except TypeError or ValueError:
+            except:
                 runningtestembed = discord.Embed(title="ERROR", description=f"The bot can't send messages in this channel. Please make sure to activate `send messages` for the bot in {channel.mention}")    
                 await interaction.followup.send(embed=runningtestembed)
                 channel = None

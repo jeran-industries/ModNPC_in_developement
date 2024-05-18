@@ -5,7 +5,7 @@ import io
 import sqlite3
 
 #own modules:
-from sqlitehandler import insert_into_guildtable, check_4_guild, create_guildsetup_table
+from sqlitehandler import insert_into_guildtable, check_4_guild, create_guildsetup_table, add_columns
 
 async def database_checking_and_creating(bot, guildid):
     file_name = "./database/database.db"
@@ -23,25 +23,7 @@ async def database_checking_and_creating(bot, guildid):
     if await check_4_guild(bot=bot, guildid=guildid)==False:
         await insert_into_guildtable(bot=bot, guildid=guildid)
 
-    try:
-        cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE guildsetup ADD ticketsystemstatus BOOL")
-    except:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE guildsetup ADD ticketsystemchannel BOOL")
-    except:
-        pass
+    await add_columns(bot=bot)
 
     try:
         cursor.execute("ALTER TABLE membertable ADD last_upvote INTEGER")

@@ -35,7 +35,7 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table
 from ticketsystem import OpenTicketButton
 
 #from "dateiname" import "name der funktion"
@@ -52,6 +52,10 @@ REPORTCHANNELID = os.getenv('Report_channel_ID')
 DBLOGCHANNELID = os.getenv('')
 
 #bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
+class font():
+    def __init__(self):
+        self.rankcard_arial = ImageFont.truetype("./textures/arial.ttf", 80)
+    
 
 
 class MyBot(commands.Bot):
@@ -63,7 +67,8 @@ class MyBot(commands.Bot):
         print("Running setup tasks")
         self.pool = await asqlite.create_pool(database="./database/database.db")
         self.add_view(OpenTicketButton())
-        self.rankcard_font_arial = ImageFont.truetype("./textures/arial.ttf", 80)
+        #self.rankcard_font_arial = ImageFont.truetype("./textures/arial.ttf", 80)
+        self.font = font()
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")
@@ -399,6 +404,7 @@ async def on_ready():
     await create_autorole_table(bot=bot)
     await create_levelroles_table(bot=bot)
     await create_member_table(bot=bot)
+    await create_unique_index_member_table(bot=bot)
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')

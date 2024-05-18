@@ -4,7 +4,7 @@ import asyncio
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem
 from ticketsystem import OpenTicketButton
 
 
@@ -528,9 +528,15 @@ async def ticketsystemsetup(interaction: discord.Interaction):
     bot = interaction.client
     guild = interaction.guild
     ticketsystem_status = await get_ticketsystem_status(bot=bot, guildid=guild.id)
-    if ticketsystem_status == True:
-        embed= discord.Embed(title=f"Here you can activate.")
-    await interaction.response.send_message(embed=embed, view=activateticketsystemsetupview(), ephemeral = True)
+    if ticketsystem_status is None or ticketsystem_status=="None":
+        ticketsystem_status = False
+    print(ticketsystem_status)
+    if ticketsystem_status is False:
+        embed= discord.Embed(title=f"Here you can activate. and select the channel for the channel to create a ticket. Please not that by selecting a channel, the selected channel will be cleaned up.")
+        await interaction.response.send_message(embed=embed, view=activateticketsystemsetupview(), ephemeral = True)
+    if ticketsystem_status is True:
+        embed= discord.Embed(title=f"Here you can deactivate and select the channel for the channel to create a ticket. Please not that by selecting a channel, the selected channel will be cleaned up.")
+        await interaction.response.send_message(embed=embed, view=deactivateticketsystemsetupview(), ephemeral = True)
     
 class activateticketsystemsetupview(discord.ui.View):
     def __init__(self):
@@ -538,12 +544,13 @@ class activateticketsystemsetupview(discord.ui.View):
 
     @discord.ui.button(label="Activate", custom_id="activateticketsystem")
     async def ActivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
-        pass
+        await activate_ticketsystem(bot=interaction.client, guildid=interaction.guild.id)
+        passembed
 
     @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
     async def SelectChannelActivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
         embed=discord.Embed(title=f"Here you can open a ticket.")
-        await interaction.response.send_message(embed=embed, view = TicketsystemView())
+        await interaction.response.send_message(embed=embed, view = TicketsystemChannelView(), ephemeral = True)
 
 class deactivateticketsystemsetupview(discord.ui.View):
     def __init__(self):
@@ -551,30 +558,58 @@ class deactivateticketsystemsetupview(discord.ui.View):
 
     @discord.ui.button(label="Deactivate", custom_id="deactivateticketsystem")
     async def DeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        await activate_ticketsystem(bot=interaction.client, guildid=interaction.guild.id)
+        embed=discord.Embed(title=f"Here you can open a ticket.")
         pass
 
     @discord.ui.button(label="Select", custom_id="ticketsystemchannelselect")
     async def SelectChannelDeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
         embed=discord.Embed(title=f"Here you can open a ticket.")
-        await interaction.response.send_message(embed=embed, view = TicketsystemView())
+        await interaction.response.send_message(embed=embed, view = TicketsystemChannelView(), ephemeral = True)
 
-class TicketsystemView(discord.ui.View):
+class TicketsystemChannelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(TicketsystemSelectChannel())
-    
-    @discord.ui.button(label="Create a channel", custom_id="deactivateticketsystem")
-    async def TicketsystemCreateChannel(self, interaction: discord.Interaction, button: discord.ui.button):
-        pass
+        self.add_item(TicketsystemChannelSelectChannel())
 
-
-class TicketsystemSelectChannel(discord.ui.ChannelSelect):
+class TicketsystemChannelSelectChannel(discord.ui.ChannelSelect):
     def __init__(self):
         super().__init__(placeholder="Just a test", channel_types=[discord.ChannelType.text, discord.ChannelType.news])
 
     async def callback(self, interaction: discord.Interaction):
         channel = self.values[0]
-        await interaction.response.send_message(content=f"Sucessfully given you {channel}")
+        bot = interaction.client
+        guild = interaction.guild
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            channel = await channel.fetch() #converts APPCOMMANDCHANNEL to GUILDCHANNEL
+            try:
+                testmessage = discord.Embed(title="Testembed")
+                await channel.send(embed = embed)
+            except TypeError or ValueError:
+                runningtestembed = discord.Embed(title="ERROR", description=f"The bot can't send messages in this channel. Please make sure to activate `send messages` for the bot in {channel.mention}")    
+                await interaction.followup.send(embed=runningtestembed)
+                channel = None
+            finally:
+                if channel is not None:
+                    runningtestembed = discord.Embed(title=f"SUCCESS - Tests completed \nSending ticketmessage in {channel.mention} and creating categories.")    
+                    await interaction.followup.send(embed=runningtestembed)
+
+                    await update_channel_ticketsystem(bot=bot, guildid=guild.id, channelid=channel.id)
+                    ticketembed = discord.Embed(title="Create a ticket", description="Create a ticket and descripe your issue in the modal.")
+                    await channel.send(embed = ticketembed, view=OpenTicketButton())
+                    
+                    #create categories:
+                    openticketcategory = await guild.create_category(name = "Open Tickets")
+                    closedticketcategory = await guild.create_category(name = "Closed Tickets")
+                    await update_opentickets_category_ticketsystem(bot=bot, guildid=guild.id, categoryid=openticketcategory.id)
+                    await update_closedtickets_category_ticketsystem(bot=bot, guildid=guild.id, categoryid=closedticketcategory.id)
+                    
+
+        except TypeError or ValueError:
+            runningtestembed = discord.Embed(title="ERROR", description=f"The bot can't view the channel. Please make sure to activate `view channel` and `send messages` for the bot in {channel.mention}")
+            await interaction.followup.send(embed=runningtestembed)
+        #await interaction.response.send_message(content=f"Sucessfully given you {channel}")
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

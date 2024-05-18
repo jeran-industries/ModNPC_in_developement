@@ -140,9 +140,23 @@ async def deactivate_ticketsystem(bot, guildid):
 
 async def update_channel_ticketsystem(bot, guildid, channelid):
     if channelid is None:
-        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = 'None' WHERE guildid = {guildid}")
+        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemchannelid = 'None' WHERE guildid = {guildid}")
     else:
-        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemstatus = {channelid} WHERE guildid = {guildid}")
+        await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemchannelid = {channelid} WHERE guildid = {guildid}")
+
+async def update_opentickets_category_ticketsystem(bot, guildid, categoryid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemopencategoryid = {categoryid} WHERE guildid = {guildid}")
+
+async def update_closedtickets_category_ticketsystem(bot, guildid, categoryid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set ticketsystemcloseddcategoryid = {categoryid} WHERE guildid = {guildid}")
+
+async def get_opentickets_categoryid(bot, guildid):
+    opentickets_categoryid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemopencategoryid")
+    return(opentickets_categoryid)
+
+async def get_closedtickets_categoryid(bot, guildid):
+    closedtickets_categoryid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemclosedcategoryid")
+    return(closedtickets_categoryid)
 
 async def get_ticketsystem_status(bot, guildid):
     ticketsystemstatus = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM guildsetup WHERE guildid = {guildid}", data_to_return="ticketsystemstatus")
@@ -173,12 +187,14 @@ async def insert_into_guildtable(bot, guildid):
     logchannelid=None
     ticketsystemstatus=False
     ticketsystemchannel=None
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}')")
+    ticketsystemopencategoryid=None
+    ticketsystemclosedcategoryid=None
+    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}', {ticketsystemopencategoryid}, {ticketsystemclosedcategoryid})")
 
 #creating tables:
 async def create_guildsetup_table(bot):
     #botupdatestatus BOOL, botupdatechannelid INTEGER)"
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, ticketsystemstatus BOOL, ticketsystemchannel INTEGER)")
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, ticketsystemstatus BOOL, ticketsystemchannelid INTEGER, ticketsystemopencategoryid INTEGER, ticketsystemclosedcategoryid INTEGER)")
 
 async def create_autorole_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")
@@ -192,6 +208,29 @@ async def create_member_table(bot):
 #create indexes:
 async def create_unique_index_member_table(bot):
     await asqlite_create_index(bot=bot, statement="CREATE UNIQUE INDEX IF NOT EXISTS membertable_guildid_memberid ON membertable(guildid, memberid)")
+
+#adding columns if needed:
+async def add_columns(bot):
+    await create_logchannelid_column(bot)
+    await create_ticketsystemstatus_column(bot)
+    await create_ticketsystemchannelid_column(bot)
+    await create_ticketsystemopencategoryid_column(bot)
+    await create_ticketsystemclosedcategoryid_column(bot)
+
+async def create_logchannelid_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="logchannelid", columntype="INTEGER")
+
+async def create_ticketsystemstatus_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemstatus", columntype="BOOL")
+
+async def create_ticketsystemchannelid_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemchannelid", columntype="INTEGER")
+
+async def create_ticketsystemopencategoryid_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemopencategoryid", columntype="INTEGER")
+
+async def create_ticketsystemclosedcategoryid_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemclosedcategoryid", columntype="INTEGER")
 
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):
@@ -244,4 +283,24 @@ async def asqlite_delete(bot, statement):
 async def asqlite_create_index(bot, statement):
     async with bot.pool.acquire() as connection:
         await connection.execute(statement)
+        await connection.commit()
+
+async def asqlite_try_2_add_column(bot, table, columnname, columntype):
+    async with bot.pool.acquire() as connection:
+        try:
+            await connection.execute(f"ALTER TABLE {table} ADD {columnname} {columnname}")
+            await connection.commit()
+        except:
+            pass
+    #try:
+    #    cursor.execute("ALTER TABLE guildsetup ADD logchannelid INTEGER")
+    #except:
+    #    pass
+    #pass
+
+#unsafe: can run into problem
+async def asqlite_add_column(bot, table, columnname, columntype):
+    print("DONT USE THIS FUNCTION IN PRODUCTION: CAN RUN INTO PROBLEMS AND RUIN WHOLE STARTUP PROCESS")
+    async with bot.pool.acquire() as connection:
+        await connection.execute(f"ALTER TABLE {table} ADD {columnname} {columnname}")
         await connection.commit()

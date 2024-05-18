@@ -358,7 +358,7 @@ def rankcardgenerator(bot, username, memberid, rank, xp, level, guildid):
         progressbarfront = Image.open("./textures/progressbarfront.png").convert("RGBA")
 
 
-        font = bot.rankcard_font_arial
+        font = bot.font.rankcard_arial
 
         # User's rank details (customize as needed)
         user_name = unicodedata.normalize("NFKD", username)

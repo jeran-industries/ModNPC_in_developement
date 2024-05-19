@@ -30,6 +30,7 @@ class SelectStartMenu(discord.ui.Select):
         self.bot = bot
         options = [
             discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
+            #discord.SelectOption(label='Applications', description='Here you can setup the applications for your server staff and other roles.'),
             discord.SelectOption(label='Autoroles', description='Here you can add and remove autoroles.'),
             discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work.'),
             discord.SelectOption(label='Custom VCs', description='You can activate and deactivate custom voicechats.'),
@@ -46,6 +47,8 @@ class SelectStartMenu(discord.ui.Select):
         #print(result)
         if result == "Anonymous Messages":
             await anonymousmessagessetup(interaction)
+        elif result == "Applications":
+            await autorolessetup(interaction)
         elif result == "Autoroles":
             await autorolessetup(interaction, bot)
         elif result == "Botupdates":
@@ -61,6 +64,10 @@ class SelectStartMenu(discord.ui.Select):
         elif result == "Welcomemessages":
             await welcomemessagessetup(interaction)
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
+
+#Applications:
+async def applicationsseetup(interaction):
+    pass
 
 #Autoroles:
 async def autorolessetup(interaction, bot):

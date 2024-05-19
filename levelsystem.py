@@ -227,15 +227,16 @@ async def checkleaderboard(interaction, bot, memberid = None):
             xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND xp < {max_xp} ORDER BY xp DESC", data_to_return="xp")
             memberid = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND xp < {max_xp} ORDER BY xp DESC", data_to_return="memberid")
             if memberid:
-                if guildid != 0:
-                    member = guild.get_member(memberid)
+                if guildid == 0:
+                    member = bot.get_member(memberid)
                     memberdisplayname = member.display_name
                     if member:
                         embed.add_field(name=f"Place #{i}:", value=memberdisplayname, inline=False)
                         i += 1
                     max_xp = xp
                 else:
-                    if memberdisplayname:
+                    member = guild.get_member(memberid)
+                    if member is not None:
                         embed.add_field(name=f"Place #{i}:", value=member.mention, inline=False)
                         i += 1
                     max_xp = xp

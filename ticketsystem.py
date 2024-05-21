@@ -75,6 +75,7 @@ class Unclaimedticketbuttons(discord.ui.View):
         channel = interaction.channel
         member = interaction.user
         guild = interaction.guild
+        await interaction.response.defer(thinking=true)
         #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
         await update_ticket_status(bot=bot, ticketid=channel.id, status=2, claimerid=member.id)
 
@@ -88,7 +89,7 @@ class Unclaimedticketbuttons(discord.ui.View):
         await channel.set_permissions(target=creator, read_messages=False, send_messages=False)
 
         embed = discord.Embed(title="The ticket got closed", description = f"The ticket from <@{creatorid}> <#{channel.id}> got closed by {member.mention}")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @discord.ui.button(label="Reopen", custom_id="reopenticketbutton", emoji="🔓", disabled=False)
     async def reopenaticket(self, interaction: discord.Interaction, button: discord.ui.button):
@@ -96,6 +97,7 @@ class Unclaimedticketbuttons(discord.ui.View):
         guild = interaction.guild
         channel = interaction.channel
         member = interaction.user
+        await interaction.response.defer(thinking=true)
         #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
         ticketsystem_status = await get_ticketsystem_status(bot=bot, guildid=guild.id)
         creatorid = await get_creatorid_ticket(bot=bot, ticketid=channel.id)
@@ -104,11 +106,11 @@ class Unclaimedticketbuttons(discord.ui.View):
             await update_ticket_status(bot=bot, ticketid=channel.id, status=4, claimerid=member.id)
             claimerid = await get_claimerid_ticket(bot=bot, ticketid=channel.id)
             embed = discord.Embed(title=f"The ticket was reopened.")
-            await interaction.response.send_message(content=f"<@{creatorid}> <@{claimerid}", embed = embed)
+            await interaction.followup.send(content=f"<@{creatorid}> <@{claimerid}", embed = embed)
         else:
             await update_ticket_status(bot=bot, ticketid=channel.id, status=3, claimerid=member.id)
             embed = discord.Embed(title=f"The ticket was reopened.")
-            await interaction.response.send_message(content=f"<@{creatorid}>", embed = embed)
+            await interaction.followup.send(content=f"<@{creatorid}>", embed = embed)
 
         openedtickets_categoryid = await get_opentickets_categoryid(bot=bot, guildid=guild.id)
         openedtickets_category = guild.get_channel(openedtickets_categoryid)

@@ -48,7 +48,7 @@ class SelectStartMenu(discord.ui.Select):
         if result == "Anonymous Messages":
             await anonymousmessagessetup(interaction)
         elif result == "Applications":
-            await autorolessetup(interaction)
+            await applicationssetup(interaction)
         elif result == "Autoroles":
             await autorolessetup(interaction, bot)
         elif result == "Botupdates":
@@ -66,8 +66,16 @@ class SelectStartMenu(discord.ui.Select):
         #await interaction.response.send_message(content=f"You clicked on this option: {result}")
 
 #Applications:
-async def applicationsseetup(interaction):
+async def applicationssetup(interaction):
     pass
+
+class ApplicationSetupView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    #@discord.ui.button(label="Add application")
+    #async addnewapplication(self, interaction: discord.Interaction, button: discord.ui.Button):
+    #    pass
 
 #Autoroles:
 async def autorolessetup(interaction, bot):

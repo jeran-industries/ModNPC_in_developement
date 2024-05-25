@@ -444,7 +444,7 @@ elif BETA_TOKEN is None and TOKEN is not None:
 elif BETA_TOKEN is not None and TOKEN is None:
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)
 else:
-    debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
+    #debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
     if debug == "debug":
         bot.run(BETA_TOKEN, log_level=logging.DEBUG)
     else:

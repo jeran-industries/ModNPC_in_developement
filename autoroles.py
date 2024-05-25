@@ -9,7 +9,6 @@ async def add_autorole_2_user(bot, member):
     guild = member.guild
     guildid = guild.id
 
-    print(member.id)
 
     #print("\n Im here \n")
 
@@ -30,9 +29,7 @@ async def add_autorole_2_user(bot, member):
 async def membergrouproleassignement(guild, membergroup, member, bot):
 
     roleids = await get_autoroles(bot=bot, guildid=guild.id, membergroup=membergroup)
-    print(roleids)
     for roleid in roleids:
-        print(roleid)
         role=guild.get_role(roleid)
         await member.add_roles(role)
 

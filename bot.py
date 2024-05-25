@@ -47,9 +47,9 @@ BETA_CLIENT_ID = os.getenv('Client_id_beta')
 DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
-MEMBERLOGCHANNELID = os.getenv('Member_log_channel_ID')
-REPORTCHANNELID = os.getenv('Report_channel_ID')
-DBLOGCHANNELID = os.getenv('')
+MEMBERLOGCHANNELID = int(os.getenv('Member_log_channel_ID'))
+REPORTCHANNELID = int(os.getenv('Report_channel_ID'))
+DBLOGCHANNELID = int(os.getenv(''))
 
 #bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
 class font():
@@ -84,11 +84,19 @@ sys.path.append('.')
 @bot.event
 async def on_member_join(member):
     channel = bot.get_channel(MEMBERLOGCHANNELID)
+    print(MEMBERLOGCHANNELID)
+    print(channel)
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
-    await channel.send(embed=embed)
+    try:
+        await channel.send(embed=embed)
+    except:
+        pass
     #await sendwelcomemessage(member, bot)
     await new_member(member, bot)
-    await memberjoin(bot, member)
+    try:
+        await memberjoin(bot, member)
+    except:
+        pass
     await add_autorole_2_user(bot=bot, member=member)
 
 @tasks.loop(minutes=1)

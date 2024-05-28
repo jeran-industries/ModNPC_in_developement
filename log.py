@@ -98,11 +98,12 @@ async def messagedeletedeventlog(bot, message):
 
             embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")
             embed.add_field(name = f"Content: ({message.created_at})", value = f"```{message.content}```\n\n||Embeds and files if existing in the thread||", inline = True)
-            if message.attachments is not None:
-                files=[]
-                for attachment in message.attachments:
-                    file = await attachment.to_file(filename=f"/database/loggingfiles/{message.id}/")
-                    files.append(file)
+            files = None
+            #if message.attachments is not None:
+            #    files=[]
+            #    for attachment in message.attachments:
+            #        file = await attachment.to_file(filename=f"/database/loggingfiles/{message.id}/")
+            #        files.append(file)
             await loginfosandsending(embed, message.author, bot, webhook, logchannel, message1=message, files=files)
     #v1:
     #file_name = "./Logs/Messages/V1/" + str(message.guild.id) + '/' + str(message.channel.id) + ".json"

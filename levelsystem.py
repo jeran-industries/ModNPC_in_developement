@@ -314,7 +314,7 @@ async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
 async def claimcommand(interaction):
     memberid = interaction.user.id
     guildid = interaction.guild.id
-    bot = interaction.client.user
+    bot = interaction.client
     lastupvote = await get_lastupvote(bot=bot, guildid=0, memberid=memberid)
     if lastupvote == None:
         lastupvote = 0

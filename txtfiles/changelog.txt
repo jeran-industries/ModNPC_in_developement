@@ -21,20 +21,22 @@ completed:
 0.11: adding v3 of levelingsystem
     0.11.1: adding custom levelroles(Being tested)
 0.12: adding logs
+0.13: adding custom welcomemessages
+0.14: adding autoroles
+0.15: adding ticketsystem
 
 
 in progress:
 adding errorhandling
-adding custom welcomemessages(being tested)
 adding anonymous messages(in progress)
 adding a button to list all levelroles
+adding customvcs
 
 in future:
 adding v4 of pollsystem: expanding by adding buttons
 adding v3 of selfrolessystem
     adding buttons to selfrolessystem
     adding dropmenu
-adding customvcs
 adding webinterface(being planned)
 adding socialmediapings
 adding arenawar(being planned)
@@ -44,3 +46,4 @@ adding system for stats
 blacklisting discord invitelinks
 antiraid/nuke
 inviteroles
+adding custom leavemessages

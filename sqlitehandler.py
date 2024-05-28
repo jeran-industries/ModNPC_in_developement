@@ -185,7 +185,22 @@ async def get_claimerid_ticket(bot, ticketid):
 #welcomemessages:
 async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage):
     #"INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage)
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO welcomemessagetable VALUES ({guildid}, {channelid}, {headerwelcomemessage}, {contentwelcomemessage})")
+    #print(headerwelcomemessage)
+    #print(contentwelcomemessage)
+    #conn.execute("INSERT INTO Employees (ID,NAME,AGE,ADDRESS,SALARY) \  VALUES (1, 'Ajeet', 27, 'Delhi', 20000.00 )");  
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?, ?)", (guildid, channelid, headerwelcomemessage, contentwelcomemessage, True))
+        await connection.commit()
+
+async def check_4_welcomemessage(bot, guildid):
+    data = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM welcomemessagetable WHERE guildid = {guildid}", data_to_return="guildid")
+    if data is not None:
+        return(True)
+    else:
+        return(False)
+
+async def delete_welcomemessage(bot, guildid):
+    await asqlite_delete(bot=bot, statement=f"DELETE FROM welcomemessagetable WHERE guildid = {guildid}")
 
 #guildmanagement:
 async def check_4_guild(bot, guildid):
@@ -228,6 +243,10 @@ async def create_member_table(bot):
 async def create_ticketsystemtable(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS ticketsystemtable (guildid INTEGER, ticketid INTEGER, ticketstatus INTEGER, creatorid INTEGER, claimerid INTEGER)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
 
+    #cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
+async def create_welcomemessagetable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT, mentionwelcomemessage BOOL)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
+
 #create indexes:
 async def create_unique_index_member_table(bot):
     await asqlite_create_index(bot=bot, statement="CREATE UNIQUE INDEX IF NOT EXISTS membertable_guildid_memberid ON membertable(guildid, memberid)")
@@ -239,6 +258,7 @@ async def add_columns(bot):
     await create_ticketsystemchannelid_column(bot)
     await create_ticketsystemopencategoryid_column(bot)
     await create_ticketsystemclosedcategoryid_column(bot)
+    await create_mentionwelcomemessage_column(bot)
 
 async def create_logchannelid_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="logchannelid", columntype="INTEGER")
@@ -254,6 +274,9 @@ async def create_ticketsystemopencategoryid_column(bot):
 
 async def create_ticketsystemclosedcategoryid_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemclosedcategoryid", columntype="INTEGER")
+
+async def create_mentionwelcomemessage_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="welcomemessagetable", columnname="mentionwelcomemessage", columntype="BOOL")
 
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):

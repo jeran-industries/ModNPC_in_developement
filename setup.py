@@ -1,18 +1,19 @@
 import discord
 import sqlite3
 import asyncio
+import gettext
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage
 from ticketsystem import OpenTicketButton
-
 
 async def setupcommand(interaction, bot):
     if await check4dm(interaction) == False:
         member = interaction.user
         if member.guild_permissions.administrator:
-            embeddedsetup = discord.Embed(title=f'Setup:', description = f'Here you can setup ModNPC', color=discord.Color.green())
+            #text = gettext.translation(, localedir='locale', languages=['de_DE'])
+            embeddedsetup = discord.Embed(title=f'Setup:', description = 'Here you can setup ModNPC.', color=discord.Color.green())
             await interaction.response.send_message(embed = embeddedsetup, ephemeral = True, view = SelectStart(bot))
         else:
             misssuccessembed = discord.Embed(title=f'Error', description = f'You dont have the rights to setup the bot.', color=discord.Color.dark_red())
@@ -663,14 +664,19 @@ class WelcomemessageConfirmation(discord.ui.View):
         self.contentwelcomemessage = contentwelcomemessage
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="CreateWelcomemessage", custom_id="createwelcomemessage")
+    @discord.ui.button(label="Create Welcomemessage", custom_id="createwelcomemessage")
     async def createwelcomemessagebutton(self, interaction: discord.Interaction, button: discord.ui.button):
         channelid = int(self.channel[0].id)
         headerwelcomemessage = self.headerwelcomemessage.value
         contentwelcomemessage = self.contentwelcomemessage.value
+        bot = interaction.client
+        guild = interaction.guild
+        await delete_welcomemessage(bot=bot, guildid=guild.id)
         await insert_into_welcomemessage(bot=interaction.client, guildid=interaction.guild.id, channelid=channelid, headerwelcomemessage=headerwelcomemessage, contentwelcomemessage=contentwelcomemessage)
-        await interaction.response.send_message(f"Success the welcomemessage was created. \n| {channelid} |\n| {headerwelcomemessage} |\n| {contentwelcomemessage} |", ephemeral=True)
+        successembed = discord.Embed(title="SUCCESS", description=f"Success the welcomemessage was created for <#{channelid}>.")
+        await interaction.response.send_message(embed=successembed, ephemeral=True)
 
-    @discord.ui.button(label="DiscardWelcomemessage", custom_id="discardwelcomemessage")
+    @discord.ui.button(label="Discard Welcomemessage", custom_id="discardwelcomemessage")
     async def discardwelcomemessagebutton(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"You discarded the changes", ephemeral=True)
+        successembed = discord.Embed(title="SUCCESS", description=f"You discarded the changes")
+        await interaction.response.send_message(embed=successembed, ephemeral=True)

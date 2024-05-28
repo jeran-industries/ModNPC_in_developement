@@ -1,0 +1,17 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"PO-Revision-Date: 2024-05-24 15:54+0200\n"
+"Last-Translator: Steven <steven@steven-82c7>\n"
+"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Hello World"
+msgstr "Hallo Welt!"
+
+msgid "Here you can setup ModNPC."
+msgstr "Hier kannst du ModNPC konfigurieren."

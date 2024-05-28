@@ -12,7 +12,6 @@ async def database_checking_and_creating(bot, guildid):
     connection = sqlite3.connect(file_name)
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS memberlog (guildid INTEGER, memberid INTEGER, timestamp TEXT, status TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS selfrolesdata (guildid INTEGER, messageid INTEGER, dropdown BOOL, color TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS selfroleoptions (messageid INTEGER, emoji TEXT, roleid TEXT, description TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS polldata (messageid INTEGER, channelid INTEGER, guildid INTEGER, votecount INTEGER, runningstatus BOOLEAN)") #creates a table that have the ground data of the poll

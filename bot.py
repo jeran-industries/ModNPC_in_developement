@@ -48,8 +48,8 @@ DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
 MEMBERLOGCHANNELID = int(os.getenv('Member_log_channel_ID'))
-REPORTCHANNELID = int(os.getenv('Report_channel_ID'))
-DBLOGCHANNELID = int(os.getenv(''))
+#REPORTCHANNELID = int(os.getenv('Report_channel_ID'))
+#DBLOGCHANNELID = int(os.getenv(''))
 
 #bot = commands.Bot(intents=discord.Intents.all(), command_prefix='/')
 class font():
@@ -320,8 +320,8 @@ async def patreon(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 @bot.tree.command()
-async def testwelcomemessage(interaction: discord.Interaction, member: discord.Member):
-    await sendwelcomemessage(interaction, member=member, bot=bot)
+async def testwelcomemessage(interaction: discord.Interaction, member: discord.Member = None):
+    await sendwelcomemessage(interaction, member=member)
 
 #syncing
 @bot.command()
@@ -444,7 +444,7 @@ elif BETA_TOKEN is None and TOKEN is not None:
 elif BETA_TOKEN is not None and TOKEN is None:
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)
 else:
-    #debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
+    debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
     if debug == "debug":
         bot.run(BETA_TOKEN, log_level=logging.DEBUG)
     else:

@@ -89,11 +89,11 @@ async def messageeditedeventlog(bot, before, after):
 async def messagedeletedeventlog(bot, message):
     eventtype="deleted"
     if bot.user.id != message.author.id:
-        webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+        webhook = await getlogwebhook(bot=bot, guildid=message.guild.id)
 
         logchannel = None
         if webhook is None:
-            logchannel = await getlogchannel(bot, after.guild.id)
+            logchannel = await getlogchannel(bot, message.guild.id)
         if (logchannel is not None or webhook is not None):
 
             embed = discord.Embed(title = f"{message.author.display_name} ({message.author.id}) just deleted a message.")
@@ -101,7 +101,7 @@ async def messagedeletedeventlog(bot, message):
             if message.attachments is not None:
                 files=[]
                 for attachment in message.attachments:
-                    file = await attachment.to_file(filename=f"./database/loggingfiles/{message.id}/")
+                    file = await attachment.to_file(filename=f"/database/loggingfiles/{message.id}/")
                     files.append(file)
             await loginfosandsending(embed, message.author, bot, webhook, logchannel, message1=message, files=files)
     #v1:
@@ -197,21 +197,21 @@ async def voicechatupdate(bot, member, before, after): #nennt_mich_wie_ihr_wollt
 
 #member
 async def memberjoin(bot, member):
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=member.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, member.guild.id)
     if (logchannel is not None or webhook is not None):
         embed = discord.Embed(title = f"{member.display_name} just joined.")
         await loginfosandsending(embed, member, bot, webhook, logchannel)
     
 async def memberleave(bot, payload):
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=payload.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, payload.guild.id)
     if (logchannel is not None or webhook is not None):
         guild = bot.get_guild(payload.guild_id) #getting guild
         embed = discord.Embed(title = f"{payload.user.display_name} just left.")
@@ -235,11 +235,11 @@ async def memberupdate(bot, before, after): #deactivated due to problem with bef
         await loginfosandsending(embed, member, bot, webhook, logchannel)  
 
 async def memberban(bot, guild, member):
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=member.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, member.guild.id)
     if (logchannel is not None or webhook is not None):
         if guild.me.guild_permissions.view_audit_log:
             async for entry in bot.get_guild(guild.id).audit_logs(action=discord.AuditLogAction.ban):
@@ -252,11 +252,11 @@ async def memberban(bot, guild, member):
         await loginfosandsending(embed, member, bot, webhook, logchannel)
         
 async def memberunban(bot, guild, member):
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=member.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, member.guild.id)
     if (logchannel is not None or webhook is not None):
         #try:
         if guild.me.guild_permissions.view_audit_log:
@@ -274,11 +274,11 @@ async def memberunban(bot, guild, member):
 
 async def invitecreate(bot, invite):
     guild = invite.guild
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=invite.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, invite.guild.id)
     if (logchannel is not None or webhook is not None):
         if guild.me.guild_permissions.manage_channels:
             member = invite.inviter
@@ -296,11 +296,11 @@ async def invitecreate(bot, invite):
 
 async def invitedelete(bot, invite):
     guild = invite.guild
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=invite.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, invite.guild.id)
     if (logchannel is not None or webhook is not None):
         if guild.me.guild_permissions.manage_channels:
             member = invite.inviter

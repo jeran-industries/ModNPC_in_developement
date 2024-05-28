@@ -110,6 +110,13 @@ async def get_logchannelid(bot, guildid):
 async def update_logchannelid(bot, logchannelid, guildid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set logchannelid = {logchannelid} WHERE guildid = {guildid}")
 
+async def get_logwebhookid(bot, guildid):
+    logwebhookid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM guildsetup WHERE guildid = {guildid}', data_to_return="logwebhookid")
+    return(logwebhookid)
+
+async def update_logwebhookid(bot, logwebhookid, guildid):
+    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set logwebhookid = {logwebhookid} WHERE guildid = {guildid}")
+
 #selfroles:
 async def insert_into_selfroles(bot, guildid, messageid, dropdown, color):
     await asqlite_insert_data(bot=bot, statement=f"INSERT INTO selfrolesdata VALUES ({guildid}, {messageid}, {dropdown}, '{color}')")
@@ -229,7 +236,7 @@ async def insert_into_guildtable(bot, guildid):
 #creating tables:
 async def create_guildsetup_table(bot):
     #botupdatestatus BOOL, botupdatechannelid INTEGER)"
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, ticketsystemstatus BOOL, ticketsystemchannelid INTEGER, ticketsystemopencategoryid INTEGER, ticketsystemclosedcategoryid INTEGER)")
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, logwebhookid INTEGER, ticketsystemstatus BOOL, ticketsystemchannelid INTEGER, ticketsystemopencategoryid INTEGER, ticketsystemclosedcategoryid INTEGER)")
 
 async def create_autorole_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")
@@ -254,6 +261,7 @@ async def create_unique_index_member_table(bot):
 #adding columns if needed:
 async def add_columns(bot):
     await create_logchannelid_column(bot)
+    await create_logwebhookid_column(bot)
     await create_ticketsystemstatus_column(bot)
     await create_ticketsystemchannelid_column(bot)
     await create_ticketsystemopencategoryid_column(bot)
@@ -262,6 +270,9 @@ async def add_columns(bot):
 
 async def create_logchannelid_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="logchannelid", columntype="INTEGER")
+
+async def create_logwebhookid_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="logwebhookid", columntype="INTEGER")
 
 async def create_ticketsystemstatus_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="ticketsystemstatus", columntype="BOOL")

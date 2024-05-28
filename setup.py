@@ -5,7 +5,7 @@ import gettext
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid
 from ticketsystem import OpenTicketButton
 
 async def setupcommand(interaction, bot):
@@ -521,6 +521,7 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             channel = await channel.fetch()
+            webhook = await channel.create_webhook(name="ModNPC Logging", reason="Created Webhook for Logging")
             testembed = discord.Embed(title = f"This is a testmessage.", description = f"This action was made by {member.mention} ||{member.id}||.")
             try:
                 testmessage = await channel.send(embed=testembed)
@@ -528,6 +529,7 @@ class LogChannelSelectMenu(discord.ui.ChannelSelect):
                     await testmessage.create_thread(name="testhread")
                     guildid = interaction.guild.id
                     await update_logchannelid(bot=bot, logchannelid=channel.id, guildid=guildid)
+                    await update_logwebhookid(bot=bot, logwebhookid=webhook.id, guildid=guildid)
                     embed = discord.Embed(title = f"This channel was set to be the logging channel.", description = f"This action was made by {member.mention} ||{member.id}||.")
                     await channel.send(embed = embed)
                     embed = discord.Embed(title = f"*SUCCESS*", description = f"You set the channel to {channel.mention}.\nI always recommand activating the permission: `administrator`") 

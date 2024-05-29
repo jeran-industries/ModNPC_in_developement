@@ -155,11 +155,11 @@ async def messagedeletedeventlog(bot, message):
 
 #voicechat
 async def voicechatupdate(bot, member, before, after): #nennt_mich_wie_ihr_wollt | <VoiceState self_mute=False self_deaf=False self_stream=False suppress=False requested_to_speak_at=None channel=<VoiceChannel id=1128824579398307923 name='Allgemein' rtc_region=None position=0 bitrate=64000 video_quality_mode=<VideoQualityMode.auto: 1> user_limit=0 category_id=1128824579398307920>> | <VoiceState self_mute=False self_deaf=False self_stream=False suppress=False requested_to_speak_at=None channel=None>    
-    webhook = await getlogwebhook(bot=bot, guildid=after.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=member.guild.id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, after.guild.id)
+        logchannel = await getlogchannel(bot, member.guild.id)
 
     if (logchannel is not None or webhook is not None):
         try:

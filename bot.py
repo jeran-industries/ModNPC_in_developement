@@ -91,13 +91,19 @@ async def on_member_join(member):
         await channel.send(embed=embed)
     except:
         pass
-    #await sendwelcomemessage(member, bot)
     await new_member(member, bot)
     try:
         await memberjoin(bot, member)
     except:
         pass
-    await add_autorole_2_user(bot=bot, member=member)
+    try:
+        await sendwelcomemessage(member, bot)
+    except:
+        pass
+    try:
+        await add_autorole_2_user(bot=bot, member=member)
+    except:
+        pass
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
@@ -387,7 +393,10 @@ async def on_guild_join(guild):
     embed = discord.Embed(title="New guild!", description=f"{member.guild.name} just joined the system: {inviteurl}")
     embed.add_field(name="Guildowner", value=guild.owner.name)
     embed.add_field(name="Membercount", value=guild.member_count)
-    await channel.send(embed=embed)
+    try:
+        await channel.send(embed=embed)
+    except:
+        pass
     for member in guild.members:
         new_member(member)
 
@@ -444,7 +453,7 @@ elif BETA_TOKEN is None and TOKEN is not None:
 elif BETA_TOKEN is not None and TOKEN is None:
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)
 else:
-    debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
+    #debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
     if debug == "debug":
         bot.run(BETA_TOKEN, log_level=logging.DEBUG)
     else:

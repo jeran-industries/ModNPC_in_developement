@@ -3,11 +3,10 @@ import discord
 #own modules:
 from sqlitehandler import asqlite_pull_data,asqlite_insert_data,asqlite_update_data
 
-async def sendwelcomemessage(interaction=None, member=None):
+async def sendwelcomemessage(bot, interaction=None, member=None):
     #file_name = "./database/database.db"
     #connection = sqlite3.connect(file_name)
     #cursor = connection.cursor()
-    bot = interaction.client
     if member is None:
         member=interaction.user
         guildid = interaction.guild.id

@@ -48,6 +48,7 @@ DC_SERVER = os.getenv('Dc_server')
 CLIENT_ID = os.getenv('Client_id')
 BOTLISTTOKEN = os.getenv('Dc_bot_list_Token')
 MEMBERLOGCHANNELID = int(os.getenv('Member_log_channel_ID'))
+ERRORLOGCHANNELID = int(os.getenv('Error_log_channel_ID'))
 #REPORTCHANNELID = int(os.getenv('Report_channel_ID'))
 #DBLOGCHANNELID = int(os.getenv(''))
 
@@ -89,21 +90,25 @@ async def on_member_join(member):
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     try:
         await channel.send(embed=embed)
-    except:
-        pass
+    except Exception as error:
+        await discorderrorlog(error)
+
     await new_member(member, bot)
+    
     try:
         await memberjoin(bot, member)
-    except:
-        pass
+    except Exception as error:
+        await discorderrorlog(error)
+
     try:
-        await sendwelcomemessage(member, bot)
-    except:
-        pass
+        await sendwelcomemessage(bot=bot, member=member)
+    except Exception as error:
+        await discorderrorlog(error)
+        
     try:
         await add_autorole_2_user(bot=bot, member=member)
-    except:
-        pass
+    except Exception as error:
+        await discorderrorlog(error)
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
@@ -443,6 +448,11 @@ async def on_ready():
         await beta_message_back_online(bot)
     await bot.change_presence(status=discord.Status.idle, activity = discord.Game(f"Watching {len(bot.guilds)} servers with {len(bot.users)} members"))
 
+async def discorderrorlog(error):
+    errorlogchannel = bot.get_channel(ERRORLOGCHANNELID)
+    embed = discord.Embed(title="New error!", description=error)
+    await errorlogchannel.send(embed=embed)
+
 #Do u want to debug?
 debug = None
 
@@ -453,7 +463,7 @@ elif BETA_TOKEN is None and TOKEN is not None:
 elif BETA_TOKEN is not None and TOKEN is None:
     bot.run(BETA_TOKEN, log_level=logging.DEBUG)
 else:
-    #debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
+    debug = input("Please enter 'debug', if you want to run the beta of this bot. If not enter something else:\n")
     if debug == "debug":
         bot.run(BETA_TOKEN, log_level=logging.DEBUG)
     else:

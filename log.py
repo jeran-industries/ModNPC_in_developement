@@ -356,6 +356,7 @@ async def getlogchannel(bot, guildid):
 async def getlogwebhook(bot, guildid):
     logchannelid = await get_logchannelid(bot=bot, guildid=guildid)
     webhookid = await get_logwebhookid(bot=bot, guildid=guildid)
+    webhook = None
     logchannel = None
     print(webhookid)
     if webhookid is None:

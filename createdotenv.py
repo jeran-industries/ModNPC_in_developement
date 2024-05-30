@@ -1,6 +1,6 @@
 import os
 
-filepath="test.env"
+filepath=".env"
 try:
     os.remove(filepath)
 except FileNotFoundError:
@@ -57,6 +57,13 @@ with open(filepath, 'a', encoding='utf-8') as f:
             f.write(f"Member_log_channel_ID={memberlogchannelid}\n")
         else:
             f.write(f"Member_log_channel_ID={memberlogchannelid}\n")
+        
+        errorlogchannelid=input("Enter the channelid where new members and guilds will be logged.\n")
+        if len(errorlogchannelid) == 0:
+            memberlogchannelid = None
+            f.write(f"Error_log_channel_ID={errorlogchannelid}\n")
+        else:
+            f.write(f"Error_log_channel_ID={errorlogchannelid}\n")
 
         reportchannelid=input("Enter the channelid where things like in rankcards will be reported to.\n")
         if len(reportchannelid) == 0:

@@ -17,6 +17,7 @@ import aiohttp
 import aiosqlite
 import asqlite 
 from PIL import ImageFont
+import datetime
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -74,6 +75,16 @@ class MyBot(commands.Bot):
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")
+        print(datetime.datetime.now(datetime.UTC))
+
+    async def discorderrorlog(error):
+        if ERRORLOGCHANNELID is None:
+            errorlogchannel = bot.get_channel(ERRORLOGCHANNELID)
+            embed = discord.Embed(title=f"Error: {type(error)}", description=error)
+            await errorlogchannel.send(embed=embed)
+            
+        with open("./database/discord.log", 'a', encoding='utf-8') as f:
+            f.write(f"[{datetime.datetime.now(datetime.UTC)}] [ERROR   ] {type(error)} detected by ModNPC error logger \n {error}")
         
 bot = MyBot()
 

@@ -102,24 +102,24 @@ async def on_member_join(member):
     try:
         await channel.send(embed=embed)
     except Exception as error:
-        await discorderrorlog(error)
+        await bot.discorderrorlog(error)
 
     await new_member(member, bot)
     
     try:
         await memberjoin(bot, member)
     except Exception as error:
-        await discorderrorlog(error)
+        await bot.discorderrorlog(error)
 
     try:
         await sendwelcomemessage(bot=bot, member=member)
     except Exception as error:
-        await discorderrorlog(error)
+        await bot.discorderrorlog(error)
         
     try:
         await add_autorole_2_user(bot=bot, member=member)
     except Exception as error:
-        await discorderrorlog(error)
+        await bot.discorderrorlog(error)
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():
@@ -458,11 +458,6 @@ async def on_ready():
     elif bot.user.id == 1183880930201448469: #betabot
         await beta_message_back_online(bot)
     await bot.change_presence(status=discord.Status.idle, activity = discord.Game(f"Watching {len(bot.guilds)} servers with {len(bot.users)} members"))
-
-async def discorderrorlog(error):
-    errorlogchannel = bot.get_channel(ERRORLOGCHANNELID)
-    embed = discord.Embed(title="New error!", description=error)
-    await errorlogchannel.send(embed=embed)
 
 #Do u want to debug?
 debug = None

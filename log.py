@@ -208,11 +208,11 @@ async def memberjoin(bot, member):
         await loginfosandsending(embed, member, bot, webhook, logchannel)
     
 async def memberleave(bot, payload):
-    webhook = await getlogwebhook(bot=bot, guildid=payload.guild.id)
+    webhook = await getlogwebhook(bot=bot, guildid=payload.guild_id)
 
     logchannel = None
     if webhook is None:
-        logchannel = await getlogchannel(bot, payload.guild.id)
+        logchannel = await getlogchannel(bot, payload.guild_id)
     if (logchannel is not None or webhook is not None):
         guild = bot.get_guild(payload.guild_id) #getting guild
         embed = discord.Embed(title = f"{payload.user.display_name} just left.")

@@ -75,7 +75,7 @@ class MyBot(commands.Bot):
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")
-        print(datetime.datetime.now(datetime.UTC))
+        print(datetime.datetime.now(datetime.timezone.utc))
 
     async def discorderrorlog(error):
         if ERRORLOGCHANNELID is None:
@@ -84,7 +84,7 @@ class MyBot(commands.Bot):
             await errorlogchannel.send(embed=embed)
             
         with open("./database/discord.log", 'a', encoding='utf-8') as f:
-            f.write(f"[{datetime.datetime.now(datetime.UTC)}] [ERROR   ] {type(error)} detected by ModNPC error logger \n {error}")
+            f.write(f"[{datetime.datetime.now(datetime.timezone.utc)}] [ERROR   ] {type(error)} detected by ModNPC error logger \n {error}")
         
 bot = MyBot()
 

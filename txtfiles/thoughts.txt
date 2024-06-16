@@ -16,3 +16,16 @@ Setup:
 If no permissions for Selfroles, create dmchannel and send request...
 
 check for permission "manage webhhoks" in botupdate
+
+
+
+
+webdashboard:
+1.  Frontend:   User opens website, authenticate and select server 
+    Backend:    After receiving userid and guildid, the setup for the guild gets locked in the main database and guild specific database get sended to the loading yew.rs app
+2.  Frontend:   User makes changes in the yew.rs app
+    Backend:    The branched database gets modified
+3.  Frontend:   User ends session
+    Backend:    The main database gets synced with the branched database from the yew.rs app
+
+Possible to throw user out of setup to evade locks bez of not closing the tab and other changes

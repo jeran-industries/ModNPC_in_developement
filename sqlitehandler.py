@@ -21,6 +21,99 @@ async def insert_autorole(bot, guildid, roleid, membergroup):
 async def delete_all_autoroles(bot, guildid):
     await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
 
+#custom voicechats:
+async def check4cvcstatus(bot, guildid):
+    async with bot.pool.acquire() as connection:
+        print(guildid)
+        datacursor = await connection.execute("SELECT * FROM guildsetup WHERE guildid = ?", (guildid))
+        datarow = await datacursor.fetchone()
+        cvcstatus = datarow["cvcstatus"]
+        print(cvcstatus)
+        if cvcstatus is None:
+            return(False)
+        return(cvcstatus)
+
+async def check4jointocreatechannel(bot, guildid, channelid):
+    cvcstatus = await check4cvcstatus(bot=bot, guildid=guildid)
+    if cvcstatus != 1:
+        return(False)
+
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM guildsetup WHERE guildid = ?", (guildid))
+        datarow = await datacursor.fetchone()
+        join2channelid = datarow["jointocreatechannelid"]
+        print(join2channelid)
+        if join2channelid == channelid:
+            return(True)
+        else:
+            return(False)
+
+async def check4savedcvc(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvctable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarow = await datacursor.fetchone()
+        if datarow is None:
+            print(f"There is nothing")
+            return(False)
+        #elif datarow["guildid"] is True:
+        #    print(f"This is {datarow["guildid"]}")
+        #    return(True)
+        else:
+            print(f"This is {datarow["guildid"]}.")
+            return(True)
+
+async def check4currentcvc(bot, guildid, ownerid, channelid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM currentcvctable WHERE channelid = ?", (channelid))
+        datarow = await datacursor.fetchone()
+        if datarow is None:
+            print(f"There is nothing")
+            return(False)
+        #elif datarow["guildid"] is True:
+        #    print(f"This is {datarow["guildid"]}")
+        #    return(True)
+        else:
+            print(f"This is {datarow["guildid"]}.")
+            return(True)
+
+async def insert_cvc(bot, guildid, ownerid, name):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO cvctable VALUES (?, ?, ?, ?, ?, ?)", (guildid, ownerid, f"CVC from {name}", 0, 0, None))
+        await connection.commit()
+
+async def get_cvc(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvctable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarow = await datacursor.fetchone()
+        name = datarow["name"]
+        status = datarow["status"]
+        vclimit = datarow["vclimit"]
+        password = datarow["password"]
+        return(name, status, vclimit, password)
+
+async def get_permitted_member(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvcpermittedpeopletable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarows = await datacursor.fetchall()
+        print(datarows)
+        members = []
+        for datarow in datarows:
+            members.append(datarow[memberid])
+            print(members)
+        return(members)
+
+async def insert_into_current_cvctable(bot, guildid, ownerid, channelid, name, status, vclimit, password):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO currentcvctable VALUES (?, ?, ?, ?, ?, ?, ?)", (guildid, ownerid, channelid, name, status, vclimit, password))
+        await connection.commit()
+
+async def change_customvc_status(bot, status, guildid, channelid = None):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE guildsetup set cvcstatus = ? WHERE guildid = ?", (status, guildid))
+        if status is True and channelid is not None:
+            await connection.execute("UPDATE guildsetup set jointocreatechannelid = ? WHERE guildid = ?", (channelid, guildid))
+        await connection.commit()
+
 #levelsystem:
 #async def change_xp(bot, guildid, memberid, xptoset):
 #    pass
@@ -231,7 +324,10 @@ async def insert_into_guildtable(bot, guildid):
     ticketsystemchannel=None
     ticketsystemopencategoryid=None
     ticketsystemclosedcategoryid=None
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}', {ticketsystemopencategoryid}, {ticketsystemclosedcategoryid})")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (guildid, levelingsystemstatus, levelingpingmessagechannel, welcomemessagestatus, anonymousmessagecooldown, anonymousmessagestatus, botupdatestatus, botupdatechannelid, logchannelid, ticketsystemstatus, ticketsystemchannel, ticketsystemopencategoryid, ticketsystemclosedcategoryid, None, None))
+        await connection.commit()
+    #await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}', {ticketsystemopencategoryid}, {ticketsystemclosedcategoryid})")
 
 #creating tables:
 async def create_guildsetup_table(bot):
@@ -254,6 +350,31 @@ async def create_ticketsystemtable(bot):
 async def create_welcomemessagetable(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT, mentionwelcomemessage BOOL)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
 
+#cvc
+#table cvctable: guildid, ownerid, name, status (locked/unlocked/hided), limit, password
+async def create_cvctable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS cvctable (guildid INTEGER, ownerid INTEGER, name TEXT, status INTEGER, vclimit INTEGER, password TEXT)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#table cvctable: guildid, ownerid, name, status (locked/unlocked/hided), limit, password
+async def create_current_cvctable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS currentcvctable (guildid INTEGER, ownerid INTEGER, channelid INTEGER, name TEXT, status INTEGER, vclimit INTEGER, password TEXT)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#table cvcpermittedpeopletable: guildid, ownerid, memberid
+async def create_cvcpermittedpeopletable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS cvcpermittedpeopletable (guildid INTEGER, ownerid INTEGER, memberid INTEGER)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#table current cvcpermittedpeopletable: guildid, ownerid, memberid
+async def create_current_cvcpermittedpeopletable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS currentcvcpermittedpeopletable (guildid INTEGER, ownerid INTEGER, channelid INTEGER, memberid INTEGER)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#table cvcbannedpeopletable: guildid, ownerid, memberid
+async def create_cvcbannedpeopletable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS cvcbannedpeopletable (guildid INTEGER, ownerid INTEGER, memberid INTEGER)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#table cvcmodstable: guildid, ownerid, memberid
+async def create_cvcmodstable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS cvcmodstable (guildid INTEGER, ownerid INTEGER, memberid INTEGER)") #status = 0(unlocked) 1(locked) 2(hidden)
+
 #create indexes:
 async def create_unique_index_member_table(bot):
     await asqlite_create_index(bot=bot, statement="CREATE UNIQUE INDEX IF NOT EXISTS membertable_guildid_memberid ON membertable(guildid, memberid)")
@@ -267,6 +388,8 @@ async def add_columns(bot):
     await create_ticketsystemopencategoryid_column(bot)
     await create_ticketsystemclosedcategoryid_column(bot)
     await create_mentionwelcomemessage_column(bot)
+    await create_cvcstatus_column(bot)
+    await create_jointocreatechannel_column(bot)
 
 async def create_logchannelid_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="logchannelid", columntype="INTEGER")
@@ -288,6 +411,12 @@ async def create_ticketsystemclosedcategoryid_column(bot):
 
 async def create_mentionwelcomemessage_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="welcomemessagetable", columnname="mentionwelcomemessage", columntype="BOOL")
+
+async def create_cvcstatus_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="cvcstatus", columntype="BOOL")
+
+async def create_jointocreatechannel_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="jointocreatechannelid", columntype="BOOL")
 
 #functions to connect to db with asqlite
 async def asqlite_pull_data(bot, statement, data_to_return):

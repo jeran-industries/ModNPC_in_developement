@@ -41,6 +41,7 @@ class WhyTicket(discord.ui.Modal, title="More details for your ticket:"):
         opentickets_category = guild.get_channel(opentickets_categoryid)
         channel = await opentickets_category.create_text_channel(name="Ticket")
         await channel.edit(name=f"Ticket-{channel.id}")
+        await channel.set_permissions(target=guild.default_role, read_messages=False, send_messages=False)
         await channel.set_permissions(target=member, read_messages=True, send_messages=True)
 
         await channel.send(embed=embed, view=Unclaimedticketbuttons())
@@ -75,7 +76,7 @@ class Unclaimedticketbuttons(discord.ui.View):
         channel = interaction.channel
         member = interaction.user
         guild = interaction.guild
-        await interaction.response.defer(thinking=true)
+        await interaction.response.defer(thinking=True)
         #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
         await update_ticket_status(bot=bot, ticketid=channel.id, status=2, claimerid=member.id)
 
@@ -97,7 +98,7 @@ class Unclaimedticketbuttons(discord.ui.View):
         guild = interaction.guild
         channel = interaction.channel
         member = interaction.user
-        await interaction.response.defer(thinking=true)
+        await interaction.response.defer(thinking=True)
         #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
         ticketsystem_status = await get_ticketsystem_status(bot=bot, guildid=guild.id)
         creatorid = await get_creatorid_ticket(bot=bot, ticketid=channel.id)

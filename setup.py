@@ -5,7 +5,7 @@ import gettext
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid, check4cvcstatus, change_customvc_status
 from ticketsystem import OpenTicketButton
 
 async def setupcommand(interaction, bot):
@@ -301,8 +301,28 @@ class ChannelSelectBotupdateSetup(discord.ui.ChannelSelect):
 
 #Custom VCs:
 async def customvcsetup(interaction):
-    member = interaction.user
-    await interaction.response.send_message("This part isnt programmed yet", ephemeral = True)
+    bot = interaction.client
+    guild=interaction.guild
+    embed = discord.Embed(title="Custom Voicechats")
+    if await check4cvcstatus(bot=bot, guildid=guild.id) is False:
+        await interaction.response.send_message(embed=embed, view=activButtonCVcSetup(), ephemeral = True)
+    else:
+        member = interaction.user
+        await interaction.response.send_message("This part isnt programmed yet, just delete the channel for now :).", ephemeral = True)
+
+class activButtonCVcSetup(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Activate", custom_id="CVcSetupActivate", style=discord.ButtonStyle.green)
+    async def levelsystemsetupactivate(self, interaction: discord.Interaction, button: discord.ui.Button):
+        bot = interaction.client
+        guild = interaction.guild
+        customvcscategory = await guild.create_category(name = "| Custom VCs |")
+        join2createchannel = await customvcscategory.create_voice_channel(name="Join to create")
+        await change_customvc_status(bot=bot, status=True, guildid=guild.id, channelid=join2createchannel.id)
+        embed = discord.Embed(title=f'Success', description=f"You activated Custom VCs. Test it here out: {join2createchannel.mention}.", color=discord.Color.green())
+        await interaction.response.send_message(embed = embed, ephemeral = True)
 
 #Levelsystem:
 
@@ -622,6 +642,10 @@ class TicketsystemChannelSelectChannel(discord.ui.ChannelSelect):
                     #create categories:
                     openticketcategory = await guild.create_category(name = "Open Tickets")
                     closedticketcategory = await guild.create_category(name = "Closed Tickets")
+
+                    await openticketcategory.set_permissions(target=guild.default_role, read_messages=False, send_messages=False)
+                    await closedticketcategory.set_permissions(target=guild.default_role, read_messages=False, send_messages=False)
+
                     await update_opentickets_category_ticketsystem(bot=bot, guildid=guild.id, categoryid=openticketcategory.id)
                     await update_closedtickets_category_ticketsystem(bot=bot, guildid=guild.id, categoryid=closedticketcategory.id)
                     

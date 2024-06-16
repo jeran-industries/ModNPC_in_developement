@@ -28,7 +28,7 @@ from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventl
 from membermanagement import new_member
 from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
-from help import answer4help, answer4help4mods, helpwithsetup
+from help import answer4help, answer4help4mods, helpwithsetup, helpcommand
 from botupdates import publishbotupdatescommand#, setbotupdateschannelcommand
 from sync import synccommand, reconnectcommand, disconnectcommand
 from anonymousmessage import sendanonymousmessagecommand
@@ -36,8 +36,9 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
+from customvoicechat import cvc
 
 #from "dateiname" import "name der funktion"
 
@@ -58,11 +59,9 @@ class font():
     def __init__(self):
         self.rankcard_arial = ImageFont.truetype("./textures/arial.ttf", 80)
     
-
-
 class MyBot(commands.Bot):
     def __init__(self):
-        super().__init__(intents=discord.Intents.all(), command_prefix='/')
+        super().__init__(intents=discord.Intents.all(), command_prefix='/', help_command=None)
 
     async def setup_hook(self):
         # Load the commands extension
@@ -78,13 +77,16 @@ class MyBot(commands.Bot):
         print(datetime.datetime.now(datetime.timezone.utc))
 
     async def discorderrorlog(error):
+        print("im trying to log")
         if ERRORLOGCHANNELID is None:
+            print("im logging onto discord")
             errorlogchannel = bot.get_channel(ERRORLOGCHANNELID)
             embed = discord.Embed(title=f"Error: {type(error)}", description=error)
             await errorlogchannel.send(embed=embed)
             
-        with open("./database/discord.log", 'a', encoding='utf-8') as f:
-            f.write(f"[{datetime.datetime.now(datetime.timezone.utc)}] [ERROR   ] {type(error)} detected by ModNPC error logger \n {error}")
+        with open("database/discord.log", 'a', encoding='utf-8') as f:
+            print("im logging into file")
+            f.write(f"[{datetime.datetime.now(datetime.timezone.utc)}] [ERROR   ] {type(error)} detected by the bot error logger \n {error}")
         
 bot = MyBot()
 
@@ -100,25 +102,29 @@ async def on_member_join(member):
     print(channel)
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     try:
-        await channel.send(embed=embed)
+        channel.send(embed=embed)
     except Exception as error:
-        await bot.discorderrorlog(error)
+        print(error)
+        #await bot.discorderrorlog(error)
 
     await new_member(member, bot)
     
     try:
         await memberjoin(bot, member)
     except Exception as error:
-        await bot.discorderrorlog(error)
+        print(error)
+        #await bot.discorderrorlog(error)
 
     try:
         await sendwelcomemessage(bot=bot, member=member)
     except Exception as error:
-        await bot.discorderrorlog(error)
+        print(error)
+        #await bot.discorderrorlog(error)
         
     try:
         await add_autorole_2_user(bot=bot, member=member)
     except Exception as error:
+        print(error)
         await bot.discorderrorlog(error)
 
 @tasks.loop(minutes=1)
@@ -151,6 +157,7 @@ async def on_message_delete(message):
 @bot.event
 async def on_voice_state_update(member, before, after):
     await voicechatupdate(bot, member, before, after)
+    await cvc(bot=bot, member=member, beforechannel=before.channel, afterchannel=after.channel)
 
 #@bot.event
 #async def on_member_join(member):
@@ -189,6 +196,14 @@ async def about_me(interaction: discord.Interaction):
     embed.add_field(name = f"Terms of Service:", value = f"https://jeran.polarlabs.io/modnpc/tos", inline = False)
     embed.add_field(name = f"Our patreon:heart::", value = f"https://patreon.com/modnpc", inline = False)
     await interaction.response.send_message(embed = embed, delete_after=60)
+
+@bot.command()
+async def raise_exception(ctx):
+    raise Exception("lmao")
+
+@bot.tree.command()
+async def help(interaction: discord.Interaction):
+    await helpcommand(interaction)
 
 #add role to all users
 @bot.tree.command()
@@ -343,7 +358,7 @@ async def patreon(interaction: discord.Interaction):
 
 @bot.tree.command()
 async def testwelcomemessage(interaction: discord.Interaction, member: discord.Member = None):
-    await sendwelcomemessage(interaction, member=member)
+    await sendwelcomemessage(bot, interaction, member=member)
 
 #syncing
 @bot.command()
@@ -440,6 +455,12 @@ async def on_ready():
     await create_member_table(bot=bot)
     await create_unique_index_member_table(bot=bot)
     await create_ticketsystemtable(bot=bot)
+    await create_cvctable(bot=bot)
+    await create_cvcpermittedpeopletable(bot=bot)
+    await create_cvcmodstable(bot=bot)
+    await create_cvcbannedpeopletable(bot=bot)
+    await create_current_cvctable(bot=bot)
+    await create_current_cvcpermittedpeopletable(bot=bot)
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')

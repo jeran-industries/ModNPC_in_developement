@@ -81,6 +81,11 @@ async def insert_cvc(bot, guildid, ownerid, name):
         await connection.execute("INSERT INTO cvctable VALUES (?, ?, ?, ?, ?, ?)", (guildid, ownerid, f"CVC from {name}", 0, 0, None))
         await connection.commit()
 
+async def update_cvc(bot, guildid, ownerid, name, status, vclimit, password):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE cvctable SET name = ?, status = ?, vclimit = ?, password = ? WHERE guildid = ? AND ownerid = ?", (name, status, vclimit, password, guildid, ownerid))
+        await connection.commit()
+
 async def get_cvc(bot, guildid, ownerid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM cvctable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
@@ -91,6 +96,27 @@ async def get_cvc(bot, guildid, ownerid):
         password = datarow["password"]
         return(name, status, vclimit, password)
 
+async def get_current_cvc(bot, channelid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM currentcvctable WHERE channelid = ?", (channelid))
+        datarow = await datacursor.fetchone()
+        ownerid = datarow["ownerid"]
+        name = datarow["name"]
+        status = datarow["status"]
+        vclimit = datarow["vclimit"]
+        password = datarow["password"]
+        return(ownerid, name, status, vclimit, password)
+
+async def get_current_cvcs(bot):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM currentcvctable")
+        datarows = await datacursor.fetchall()
+        channelids = []
+        for datarow in datarows:
+            channelids.append(datarow["channelid"])
+            print(channelids)
+        return(channelids)
+
 async def get_permitted_member(bot, guildid, ownerid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM cvcpermittedpeopletable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
@@ -98,7 +124,29 @@ async def get_permitted_member(bot, guildid, ownerid):
         print(datarows)
         members = []
         for datarow in datarows:
-            members.append(datarow[memberid])
+            members.append(datarow["memberid"])
+            print(members)
+        return(members)
+
+async def get_current_permitted_member(bot, channelid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM currentcvcpermittedpeopletable WHERE channelid = ?", (channelid))
+        datarows = await datacursor.fetchall()
+        print(datarows)
+        members = []
+        for datarow in datarows:
+            members.append(datarow["memberid"])
+            print(members)
+        return(members)
+
+async def get_mods(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvcmodstable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarows = await datacursor.fetchall()
+        print(datarows)
+        members = []
+        for datarow in datarows:
+            members.append(datarow["memberid"])
             print(members)
         return(members)
 
@@ -107,11 +155,52 @@ async def insert_into_current_cvctable(bot, guildid, ownerid, channelid, name, s
         await connection.execute("INSERT INTO currentcvctable VALUES (?, ?, ?, ?, ?, ?, ?)", (guildid, ownerid, channelid, name, status, vclimit, password))
         await connection.commit()
 
+async def add_current_permitted_user(bot, guildid, ownerid, channelid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO currentcvcpermittedpeopletable VALUES (?, ?, ?, ?)", (guildid, ownerid, channelid, memberid))
+        await connection.commit()
+
+async def add_permitted_user(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO cvcpermittedpeopletable VALUES (?, ?, ?)", (guildid, ownerid, memberid))
+        await connection.commit()
+
 async def change_customvc_status(bot, status, guildid, channelid = None):
     async with bot.pool.acquire() as connection:
         await connection.execute("UPDATE guildsetup set cvcstatus = ? WHERE guildid = ?", (status, guildid))
         if status is True and channelid is not None:
             await connection.execute("UPDATE guildsetup set jointocreatechannelid = ? WHERE guildid = ?", (channelid, guildid))
+        await connection.commit()
+
+async def add_mod(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO cvcmodstable VALUES (?, ?, ?)", (guildid, ownerid, memberid))
+        await connection.commit()
+
+async def remove_mod(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM cvcmodstable WHERE guildid = ? AND ownerid = ? AND memberid = ?", (guildid, ownerid, memberid))
+        await connection.commit()
+
+async def rename_current_cvc(bot, channelid, name):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE currentcvctable set name = ? WHERE channelid = ?", (name, channelid))
+        await connection.commit()
+
+async def limit_current_cvc(bot, channelid, vclimit):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE currentcvctable set vclimit = ? WHERE channelid = ?", (vclimit, channelid))
+        await connection.commit()
+    
+async def delete_current_cvc(bot, channelid):
+    #await statement=f"DELETE FROM levelroles WHERE roleid = {roleid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM currentcvctable WHERE channelid = ?", (channelid))
+        await connection.commit()
+
+async def delete_current_permits(bot, channelid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM currentcvcpermittedpeopletable WHERE channelid = ?", (channelid))
         await connection.commit()
 
 #levelsystem:

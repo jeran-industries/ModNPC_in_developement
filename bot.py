@@ -14,7 +14,6 @@ import logging
 import time
 import math
 import aiohttp
-import aiosqlite
 import asqlite 
 from PIL import ImageFont
 import datetime
@@ -38,7 +37,7 @@ from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
 from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
-from customvoicechat import cvc
+from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc
 
 #from "dateiname" import "name der funktion"
 
@@ -67,9 +66,11 @@ class MyBot(commands.Bot):
         # Load the commands extension
         print("Running setup tasks")
         self.pool = await asqlite.create_pool(database="./database/database.db")
+
         self.add_view(OpenTicketButton())
         self.add_view(Unclaimedticketbuttons())
-        #self.rankcard_font_arial = ImageFont.truetype("./textures/arial.ttf", 80)
+        self.add_view(customvoicechatcontrolmenu())
+
         self.font = font()
         one_minute_loop.start()
         ten_minute_loop.start()
@@ -264,6 +265,18 @@ async def setup(interaction:discord.Interaction):
 #@bot.tree.command()
 #async def log_set_channel(interaction: discord.Interaction, channel: discord.TextChannel):
 #    await setlogchannelcommand(interaction, channel)
+
+@bot.tree.command()
+async def cvc_controlmenu(interaction:discord.Interaction):
+    await interaction.response.send_message(view=customvoicechatcontrolmenu())
+
+@bot.tree.command()
+async def cvc_join_request(interaction:discord.Interaction, member:discord.Member):
+    await interaction.response.send_message(view=customvoicechatcontrolmenu())
+
+@bot.tree.command()
+async def cvc_claim(interaction:discord.Interaction, member:discord.Member):
+    await interaction.response.send_message(view=customvoicechatcontrolmenu())
 
 #Selfroles:
 #v1: selfroles with reactions
@@ -474,6 +487,7 @@ async def on_ready():
             else:
                 print(f"{member} (guildowner)")
     #print(f"These are all appcommands: \n{await bot.tree.sync()}")
+    await regularcheck4emptycvc(bot=bot)
     if bot.user.id == 1144006301765095484: #betabot
         await message_back_online(bot)
     elif bot.user.id == 1183880930201448469: #betabot

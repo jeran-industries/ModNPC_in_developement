@@ -37,7 +37,7 @@ from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
 from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
-from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc
+from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc, checkifuserisallowedtojoincvc, on_guild_join_rewrite_cvc_permissions
 
 #from "dateiname" import "name der funktion"
 
@@ -109,6 +109,11 @@ async def on_member_join(member):
         #await bot.discorderrorlog(error)
 
     await new_member(member, bot)
+
+    try:
+        await on_guild_join_rewrite_cvc_permissions(bot=bot, member=member)
+    except Exception as error:
+        print(error)
     
     try:
         await memberjoin(bot, member)
@@ -157,6 +162,7 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    await checkifuserisallowedtojoin(bot=bot, member=member, channel=after.channel)
     await voicechatupdate(bot, member, before, after)
     await cvc(bot=bot, member=member, beforechannel=before.channel, afterchannel=after.channel)
 

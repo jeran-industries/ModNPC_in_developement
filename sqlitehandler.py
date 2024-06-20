@@ -107,6 +107,17 @@ async def get_current_cvc(bot, channelid):
         password = datarow["password"]
         return(ownerid, name, status, vclimit, password)
 
+async def get_current_cvc_by_ownerid(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM currentcvctable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarow = await datacursor.fetchone()
+        channelid = datarow["channelid"]
+        name = datarow["name"]
+        status = datarow["status"]
+        vclimit = datarow["vclimit"]
+        password = datarow["password"]
+        return(channelid, name, status, vclimit, password)
+
 async def get_current_cvcs(bot):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM currentcvctable")
@@ -139,6 +150,28 @@ async def get_current_permitted_member(bot, channelid):
             print(members)
         return(members)
 
+async def get_cvc_where_member_blocked(bot, guildid, memberid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvcbannedpeopletable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+        datarows = await datacursor.fetchall()
+        print(datarows)
+        ownerids = []
+        for datarow in datarows:
+            ownerids.append(datarow["ownerids"])
+            print(ownerids)
+        return(ownerids)
+
+async def get_blocked_member(bot, guildid, ownerid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM cvcbannedpeopletable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
+        datarows = await datacursor.fetchall()
+        print(datarows)
+        members = []
+        for datarow in datarows:
+            members.append(datarow["memberid"])
+            print(members)
+        return(members)
+
 async def get_mods(bot, guildid, ownerid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM cvcmodstable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
@@ -160,9 +193,19 @@ async def add_current_permitted_user(bot, guildid, ownerid, channelid, memberid)
         await connection.execute("INSERT INTO currentcvcpermittedpeopletable VALUES (?, ?, ?, ?)", (guildid, ownerid, channelid, memberid))
         await connection.commit()
 
+async def delete_current_permitted_user(bot, channelid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM currentcvcpermittedpeopletable WHERE channelid = ? AND memberid = ?", (channelid, memberid))
+        await connection.commit()
+
 async def add_permitted_user(bot, guildid, ownerid, memberid):
     async with bot.pool.acquire() as connection:
         await connection.execute("INSERT INTO cvcpermittedpeopletable VALUES (?, ?, ?)", (guildid, ownerid, memberid))
+        await connection.commit()
+
+async def remove_permitted_user(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM cvcpermittedpeopletable WHERE guildid = ? AND ownerid = ? AND memberid = ?", (guildid, ownerid, memberid))
         await connection.commit()
 
 async def change_customvc_status(bot, status, guildid, channelid = None):

@@ -30,20 +30,52 @@ import discord
 import builtins
 
 #own modules:
-from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc
+from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user
 
 async def cvc(bot, member, beforechannel, afterchannel):
+    guild = beforechannel.guild
     if beforechannel is not None:
-        await check4emptycvc(bot=bot, member=member, channel=beforechannel)
+        if await check4emptycvc(bot=bot, member=member, channel=beforechannel) is False: #if a empty channel wasnt found -> 
+            current_cvcid = await get_current_cvc_by_ownerid(bot=bot, ownerid=member.id)
+            if current_cvcid == beforechannel.id:
+                await member.move_to(beforechannel)
+            elif current_cvcid is None:
+                pass
+            else:
+                cvc = guild.get_channel(current_cvcid)
+                if cvc is not None:
+                    await member.move_to(cvc)
 
     if afterchannel is not None:
         await jointocreate(bot=bot, member=member, channel=afterchannel)
         
 async def check4emptycvc(bot, member, channel):
     if len(channel.members) == 0 and await check4currentcvc(bot=bot, guildid=member.guild.id, ownerid=member.id, channelid=channel.id) is True:
-        await channel.delete(reason = "Deleting a custom voicechannel because it is empty.")
+        try:
+            await channel.delete(reason = "Deleting a custom voicechannel because it is empty.")
+        except Exception as error:
+            bot.discorderrorlog(error)
         await delete_current_cvc(bot=bot, channelid=channel.id)
         await delete_current_permits(bot=bot, channelid=channel.id)
+        return(True)
+    else:
+        return(False)
+
+async def on_guild_join_rewrite_cvc_permissions(bot, member):
+    guild = member.guild
+    ownerids = get_cvc_where_member_blocked(bot=bot, guildid=guild.id, memberid=member.id)
+    if ownerid != []:
+        for ownerid in ownerids:
+            channelid, name, status, vclimit, password = await get_current_cvc_by_ownerid(bot=bot, guildid=guild.id, ownerid=ownerid)
+            channel = guild.get_channel(channelid)
+            await channel.set_permissions(target=member, connect=False)
+
+async def checkifuserisallowedtojoincvc(bot, member, channel):
+    ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+    blocked_memberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+    if member.id in blocked_memberids:
+        await member.move_to(channel=None, reason=f"User is blocked by cvc owner ({ownerid}).")
+        await channel.set_permissions(target=member, connect=False)
 
 async def jointocreate(bot, member, channel):
     guild=member.guild
@@ -52,6 +84,7 @@ async def jointocreate(bot, member, channel):
         if await check4savedcvc(bot=bot, guildid=guild.id, ownerid=member.id) is True:
             name, status, vclimit, password = await get_cvc(bot=bot, guildid=guild.id, ownerid=member.id)
             permitted_memberids = await get_permitted_member(bot=bot, guildid=guild.id, ownerid=member.id)
+            blocked_memberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=member.id)
             print(name, status, vclimit, password)
 
         else:
@@ -65,7 +98,8 @@ async def jointocreate(bot, member, channel):
         print(name, status, vclimit, password)
 
         cvccategory = j2cchannel.category
-        cvc = await cvccategory.create_voice_channel(name=name, reason="Creating a custom voicechannel", user_limit=vclimit, position=1)
+
+        cvc = await cvccategory.create_voice_channel(name=name, reason="Creating a custom voicechannel", user_limit=vclimit, position=1, overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=permitted_memberids, blockedmemberids=blocked_memberids))
         await member.move_to(channel = cvc, reason = "Moving member from Join to create channel to the custom voicechannel")
         await insert_into_current_cvctable(bot=bot, guildid=guild.id, ownerid=member.id, channelid=cvc.id, name=name, status=status, vclimit=vclimit, password=password)
         for permitted_memberid in permitted_memberids:
@@ -83,21 +117,148 @@ async def regularcheck4emptycvc(bot):
                 if voicechannel.id in current_cvcs:
                     await voicechannel.delete(reason = "Deleting a custom voicechannel because it is empty.")
                     print("Deleted empty voicechannel in the regular check")
-                
+
+async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberids):                
+#unlocked: 0, locked&unhidden: 1, locked&hidden: 2
+    if status == 0:
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+            connect=True,
+            )
+        }
+
+    elif status == 1:
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+            send_messages=False,
+            connect=False,
+            ),
+            Role1: discord.PermissionOverwrite(
+            read_messages=True,
+            send_messages=True,
+            )
+        }
+
+        for permittedmemberid in permittedmemberids:
+            permittedmember = guild.get_member(permittedmemberid)
+            if permittedmember is not None:
+                overwrite = {
+                    permittedmember: discord.PermissionOverwrite(
+                        connect=True,
+                    )
+                }
+            overwrites.update(overwrite)
+        
+    elif status == 2:
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(
+            view_channel=False,
+            send_messages=False,
+            connect=False,
+            ),
+            Role1: discord.PermissionOverwrite(
+            read_messages=True,
+            send_messages=True,
+            )
+        }
+
+        for permittedmemberid in permittedmemberids:
+            permittedmember = guild.get_member(permittedmemberid)
+            if permittedmember is not None:
+                overwrite = {
+                    permittedmember: discord.PermissionOverwrite(
+                        connect=True,
+                        view_channel=True,
+                    )
+                }
+            overwrites.update(overwrite)
+
+    for blockedmemberid in blockedmemberids:
+        blockedmember = guild.get_member(blockedmemberid)
+        if blockedmember is not None:
+            overwrite = {
+                blockedmember: discord.PermissionOverwrite(
+                    connect=False,
+                )
+            }
+            overwrites.update(overwrite)
+    
+    return(overwrites)
 
 class customvoicechatcontrolmenu(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Rename", custom_id="renamecustomvoicechat")
+    @discord.ui.button(label="Rename", custom_id="renamecustomvoicechat", row=0)
     async def rename(self, interaction: discord.Interaction, button: discord.ui.button):
         await interaction.response.send_modal(RenameModal())
     
-    @discord.ui.button(label="Limit", custom_id="limitcustomvoicechat")
+    @discord.ui.button(label="Limit", custom_id="limitcustomvoicechat", row=0)
     async def limit(self, interaction: discord.Interaction, button: discord.ui.button):
         await interaction.response.send_modal(LimitModal())
 
-    @discord.ui.button(label="CVC info", custom_id="listmodscustomvoicechat")
+    @discord.ui.button(label="Hide", custom_id="hidecustomvoicechat", row=0)
+    async def hide(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="Unhide", custom_id="unhidecustomvoicechat", row=0)
+    async def unhide(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="Permit", custom_id="permitcustomvoicechat", row=1)
+    async def permit(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(view=PermitSelect())
+
+    @discord.ui.button(label="Unpermit", custom_id="unpermitcustomvoicechat", row=1)
+    async def unpermit(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(view=UnPermitSelect())
+
+    @discord.ui.button(label="Block", custom_id="blockcustomvoicechat", row=1)
+    async def block(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="Unblock", custom_id="unblockcustomvoicechat", row=1)
+    async def unblock(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="Add mod", custom_id="addmodcustomvoicechat", row=2)
+    async def addmod(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(view=AddModSelect())
+
+    @discord.ui.button(label="Remove mod", custom_id="removemodcustomvoicechat", row=2)
+    async def removemod(self, interaction: discord.Interaction, button: discord.ui.button):
+        bot=interaction.client
+        guild=interaction.guild
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=interaction.channel.id)
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+
+        options=[]
+        for modid in modids:
+            mod = guild.get_member(modid)
+            options.append(f"discord.SelectOption(label={mod.display_name}, description={mod.name})")
+
+        labellist = []
+        for modid in modids:
+            mod = guild.get_member(modid)
+            #levelrole = discord.utils.get(guild.roles, id=levelroleid)
+            labellist.append(discord.SelectOption(label=mod.display_name, description=mod.name, value=mod.id),)
+            print(labellist)
+        
+        if modids == []:
+            placeholder="You dont have any mods"
+            labellist = [discord.SelectOption(label="No mods", value=0)]
+            status=True
+        else:
+            placeholder="Select a mod you want to be removed"
+            status=False
+        await interaction.response.send_message(view=RemoveModSelect(options=labellist, placeholder=placeholder, status=status))
+    
+    @discord.ui.button(label="Set Password", custom_id="setpasswordcustomvoicechat", row=2)
+    async def setpassword(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="CVC info", custom_id="listmodscustomvoicechat", row=2)
     async def cvcinfo(self, interaction: discord.Interaction, button: discord.ui.button):
         bot=interaction.client
         guild=interaction.guild
@@ -127,69 +288,8 @@ class customvoicechatcontrolmenu(discord.ui.View):
         embed.add_field(name="Permitted members",value=permittedmention, inline=False)
 
         await interaction.response.send_message(embed=embed)
-
-    @discord.ui.button(label="Hide", custom_id="hidecustomvoicechat")
-    async def hide(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-
-    @discord.ui.button(label="Unhide", custom_id="unhidecustomvoicechat")
-    async def unhide(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-
-    @discord.ui.button(label="Permit", custom_id="permitcustomvoicechat")
-    async def permit(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=PermitSelect())
-
-    @discord.ui.button(label="Unpermit", custom_id="unpermitcustomvoicechat")
-    async def unpermit(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-
-    @discord.ui.button(label="Block", custom_id="blockcustomvoicechat")
-    async def block(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-
-    @discord.ui.button(label="Unblock", custom_id="unblockcustomvoicechat")
-    async def unblock(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-
-    @discord.ui.button(label="Add mod", custom_id="addmodcustomvoicechat")
-    async def addmod(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=AddModSelect())
-
-    @discord.ui.button(label="Remove mod", custom_id="removemodcustomvoicechat")
-    async def removemod(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot=interaction.client
-        guild=interaction.guild
-
-        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=interaction.channel.id)
-        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
-
-        options=[]
-        for modid in modids:
-            mod = guild.get_member(modid)
-            options.append(f"discord.SelectOption(label={mod.display_name}, description={mod.name})")
-
-        labellist = []
-        for modid in modids:
-            mod = guild.get_member(modid)
-            #levelrole = discord.utils.get(guild.roles, id=levelroleid)
-            labellist.append(discord.SelectOption(label=mod.display_name, description=mod.name, value=mod.id),)
-            print(labellist)
-        
-        if modids == []:
-            placeholder="You dont have any mods"
-            labellist = [discord.SelectOption(label="No mods", value=0)]
-            status=True
-        else:
-            placeholder="Select a mod you want to be removed"
-            status=False
-        await interaction.response.send_message(view=RemoveModSelect(options=labellist, placeholder=placeholder, status=status))
     
-    @discord.ui.button(label="Set Password", custom_id="setpasswordcustomvoicechat")
-    async def setpassword(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
-    
-    @discord.ui.button(label="Save Session", custom_id="savesessioncustomvoicechat")
+    @discord.ui.button(label="Save Session", custom_id="savesessioncustomvoicechat", row=3)
     async def savesession(self, interaction: discord.Interaction, button: discord.ui.button):
         bot = interaction.client
         channel = interaction.channel
@@ -205,12 +305,16 @@ class customvoicechatcontrolmenu(discord.ui.View):
                     pass
                 else:
                     await add_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=current_permitted_memberid)
+            for permitted_memberid in permitted_memberids:
+                if permitted_memberid in current_permitted_memberids: #if yes it means pass, if not the person got unpermitted and it gets transferred
+                    pass
+                else:
+                    await remove_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=permitted_memberid)
             await update_cvc(bot=bot, guildid=guild.id, ownerid=ownerid, name=name, status=status, vclimit=vclimit, password=password)
             embed = discord.Embed(title="Success", description="You saved the settings")
         else:
             embed = discord.Embed(title="Error", description="Only the owner can save the settings")
         await interaction.response.send_message(embed=embed)
-        
 
 class RenameModal(discord.ui.Modal, title="How should your custom voicechat be called"):
     name = discord.ui.TextInput(label="Enter the channel's new name", placeholder="Enter the channel's new name", style=discord.TextStyle.short)
@@ -305,6 +409,38 @@ class PermitSelectMenu(discord.ui.UserSelect):
             else:
                 embed = discord.Embed(title="Success", description=f"You permitted {member.mention}.")
                 await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=member.id)
+        else:
+            embed = discord.Embed(title="Error", description="You aren't the owner or a mod of this channel.")
+        
+        await interaction.response.send_message(embed=embed)
+
+class UnPermitSelect(discord.ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(PermitSelectMenu())
+
+class UnPermitSelectMenu(discord.ui.UserSelect):
+    def __init__(self):
+        super().__init__(placeholder="Choose the member to unpermit")
+
+    async def callback(self, interaction: discord.Interaction):
+        bot = interaction.client
+        guild = interaction.guild
+        member = self.values[0]
+        channel = interaction.channel
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+        currentpermittedmembers = await get_current_permitted_member(bot=bot, channelid=channel.id)
+        permittedmembers = await get_permitted_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+
+        if member.id == ownerid or member.id in modids:
+            if member.id in currentpermittedmembers:
+                await delete_current_permitted_user(bot=bot, channelid=channel.id, memberid=member.id)
+                embed = discord.Embed(title="Success", description=f"You unpermitted {member.mention}.")
+            elif member.id in permittedmembers:
+                embed = discord.Embed(title="Error", description="You have already unpermitted or never permitted this person.")
+            else:
+                embed = discord.Embed(title="Error", description="You have already unpermitted or never permitted this person.")
         else:
             embed = discord.Embed(title="Error", description="You aren't the owner or a mod of this channel.")
         

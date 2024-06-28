@@ -139,9 +139,12 @@ async def get_permitted_member(bot, guildid, ownerid):
             print(members)
         return(members)
 
-async def get_current_permitted_member(bot, channelid):
+async def get_current_permitted_member(bot, channelid, ownerid=None):
     async with bot.pool.acquire() as connection:
-        datacursor = await connection.execute("SELECT * FROM currentcvcpermittedpeopletable WHERE channelid = ?", (channelid))
+        if ownerid is None:
+            datacursor = await connection.execute("SELECT * FROM currentcvcpermittedpeopletable WHERE channelid = ?", (channelid))
+        else:
+            datacursor = await connection.execute("SELECT * FROM currentcvcpermittedpeopletable WHERE channelid = ? AND ownerid = ?", (channelid, ownerid))
         datarows = await datacursor.fetchall()
         print(datarows)
         members = []
@@ -215,6 +218,11 @@ async def change_customvc_status(bot, status, guildid, channelid = None):
             await connection.execute("UPDATE guildsetup set jointocreatechannelid = ? WHERE guildid = ?", (channelid, guildid))
         await connection.commit()
 
+async def change_ownerid(bot, channelid, ownerid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE currentcvctable set ownerid = ? WHERE channelid = ?", (ownerid, channelid))
+        await connection.commit()
+
 async def add_mod(bot, guildid, ownerid, memberid):
     async with bot.pool.acquire() as connection:
         await connection.execute("INSERT INTO cvcmodstable VALUES (?, ?, ?)", (guildid, ownerid, memberid))
@@ -244,6 +252,16 @@ async def delete_current_cvc(bot, channelid):
 async def delete_current_permits(bot, channelid):
     async with bot.pool.acquire() as connection:
         await connection.execute("DELETE FROM currentcvcpermittedpeopletable WHERE channelid = ?", (channelid))
+        await connection.commit()
+
+async def add_blocked_person(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO cvcbannedpeopletable VALUES (?, ?, ?)", (guildid, ownerid, memberid))
+        await connection.commit()
+
+async def remove_blocked_person(bot, guildid, ownerid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM cvcbannedpeopletable WHERE guildid = ? AND ownerid = ? AND memberid = ?", (guildid, ownerid, memberid))
         await connection.commit()
 
 #levelsystem:

@@ -16,10 +16,15 @@ async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
     await asqlite_update_data(bot=bot, statement=f"UPDATE autorole set membergroup = {membergroup} WHERE roleid = {roleid}")
 
 async def insert_autorole(bot, guildid, roleid, membergroup):
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO autorole VALUES ({guildid}, {roleid}, {membergroup})")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO autorole VALUES (?, ?, ?)", (guildid, roleid, membergroup))
+        await connection.commit()
+
 
 async def delete_all_autoroles(bot, guildid):
-    await asqlite_delete(bot=bot, statement=f"DELETE FROM autorole WHERE guildid = {guildid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM autorole WHERE guildid = ?", (guildid))
+        await connection.commit()
 
 #custom voicechats:
 async def check4cvcstatus(bot, guildid):

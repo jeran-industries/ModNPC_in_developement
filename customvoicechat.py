@@ -199,11 +199,55 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="Hide", custom_id="hidecustomvoicechat", row=0)
     async def hide(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+        bot = interaction.client
+        channel = interaction.channel
+        member = interaction.user
+        guild = interaction.guild
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+
+        if member.id == ownerid or member.id in modids:
+            if status != 2: #check if channel is alr locked or not
+                status = 2
+                current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
+                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
+                await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
+                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                embed = discord.Embed(title="Success", description=f"{member.mention} hided the channel.")
+            else: #channel is alr locked
+                embed = discord.Embed(title="Error", description=f"The channel is already hidden")
+        else:
+            embed = discord.Embed(title="Error", description=f"You dont have the rights to hide this channel")
+        
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="Unhide", custom_id="unhidecustomvoicechat", row=0)
     async def unhide(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+        bot = interaction.client
+        channel = interaction.channel
+        member = interaction.user
+        guild = interaction.guild
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+
+        if member.id == ownerid or member.id in modids:
+            if status == 2: #check if channel is alr unlocked or not
+                status = 1
+                current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
+                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
+                await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
+                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                embed = discord.Embed(title="Success", description=f"{member.mention} unhided the channel.")
+            else: #channel is alr locked
+                embed = discord.Embed(title="Error", description=f"The channel is already unhidden")
+        else:
+            embed = discord.Embed(title="Error", description=f"You dont have the rights to unhide this channel")
+        
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="Permit", custom_id="permitcustomvoicechat", row=1)
     async def permit(self, interaction: discord.Interaction, button: discord.ui.button):

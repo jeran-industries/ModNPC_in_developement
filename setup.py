@@ -304,11 +304,13 @@ async def customvcsetup(interaction):
     bot = interaction.client
     guild=interaction.guild
     embed = discord.Embed(title="Custom Voicechats")
-    if await check4cvcstatus(bot=bot, guildid=guild.id) is False:
+    cvcstatus=await check4cvcstatus(bot=bot, guildid=guild.id)
+    if cvcstatus is False:
         await interaction.response.send_message(embed=embed, view=activButtonCVcSetup(), ephemeral = True)
     else:
         member = interaction.user
         await interaction.response.send_message("This part isnt programmed yet, just delete the channel for now :).", ephemeral = True)
+        await change_customvc_status(bot=bot, status=False, guildid=guild.id)
 
 class activButtonCVcSetup(discord.ui.View):
     def __init__(self):

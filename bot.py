@@ -489,7 +489,8 @@ async def on_ready():
             #new_member(member, connection)
             membercounter = membercounter + 1
             if member.id != guild.owner_id:
-                print(member)
+                #print(member)
+                pass
             else:
                 print(f"{member} (guildowner)")
     #print(f"These are all appcommands: \n{await bot.tree.sync()}")

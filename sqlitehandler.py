@@ -34,7 +34,7 @@ async def check4cvcstatus(bot, guildid):
         datarow = await datacursor.fetchone()
         cvcstatus = datarow["cvcstatus"]
         print(cvcstatus)
-        if cvcstatus is None:
+        if cvcstatus is None or cvcstatus == 0:
             return(False)
         return(cvcstatus)
 
@@ -64,7 +64,7 @@ async def check4savedcvc(bot, guildid, ownerid):
         #    print(f"This is {datarow["guildid"]}")
         #    return(True)
         else:
-            print(f"This is {datarow["guildid"]}.")
+            #print(f"This is {datarow["guildid"]}.")
             return(True)
 
 async def check4currentcvc(bot, guildid, ownerid, channelid):
@@ -78,7 +78,7 @@ async def check4currentcvc(bot, guildid, ownerid, channelid):
         #    print(f"This is {datarow["guildid"]}")
         #    return(True)
         else:
-            print(f"This is {datarow["guildid"]}.")
+            #print(f"This is {datarow["guildid"]}.")
             return(True)
 
 async def insert_cvc(bot, guildid, ownerid, name):
@@ -105,23 +105,29 @@ async def get_current_cvc(bot, channelid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM currentcvctable WHERE channelid = ?", (channelid))
         datarow = await datacursor.fetchone()
-        ownerid = datarow["ownerid"]
-        name = datarow["name"]
-        status = datarow["status"]
-        vclimit = datarow["vclimit"]
-        password = datarow["password"]
-        return(ownerid, name, status, vclimit, password)
+        if datarow is not None:
+            ownerid = datarow["ownerid"]
+            name = datarow["name"]
+            status = datarow["status"]
+            vclimit = datarow["vclimit"]
+            password = datarow["password"]
+            return(ownerid, name, status, vclimit, password)
+        else:
+            return(None, None, None, None, None)
 
 async def get_current_cvc_by_ownerid(bot, guildid, ownerid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM currentcvctable WHERE guildid = ? AND ownerid = ?", (guildid, ownerid))
         datarow = await datacursor.fetchone()
-        channelid = datarow["channelid"]
-        name = datarow["name"]
-        status = datarow["status"]
-        vclimit = datarow["vclimit"]
-        password = datarow["password"]
-        return(channelid, name, status, vclimit, password)
+        if datarow is not None:
+            ownerid = datarow["ownerid"]
+            name = datarow["name"]
+            status = datarow["status"]
+            vclimit = datarow["vclimit"]
+            password = datarow["password"]
+            return(ownerid, name, status, vclimit, password)
+        else:
+            return(None, None, None, None, None)
 
 async def get_current_cvcs(bot):
     async with bot.pool.acquire() as connection:

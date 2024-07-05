@@ -33,10 +33,10 @@ import builtins
 from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user, add_blocked_person, remove_blocked_person, change_ownerid
 
 async def cvc(bot, member, beforechannel, afterchannel):
-    guild = beforechannel.guild
     if beforechannel is not None:
+        guild = beforechannel.guild
         if await check4emptycvc(bot=bot, member=member, channel=beforechannel) is False: #if a empty channel wasnt found -> 
-            current_cvcid = await get_current_cvc_by_ownerid(bot=bot, ownerid=member.id)
+            current_cvcid = await get_current_cvc_by_ownerid(bot=bot, guildid = guild.id, ownerid=member.id)
             if current_cvcid == beforechannel.id:
                 await member.move_to(beforechannel)
             elif current_cvcid is None:
@@ -71,11 +71,13 @@ async def on_guild_join_rewrite_cvc_permissions(bot, member):
             await channel.set_permissions(target=member, connect=False)
 
 async def checkifuserisallowedtojoincvc(bot, member, channel):
-    ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
-    blocked_memberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
-    if member.id in blocked_memberids:
-        await member.move_to(channel=None, reason=f"User is blocked by cvc owner ({ownerid}).")
-        await channel.set_permissions(target=member, connect=False)
+    if channel is not None:
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        guild=channel.guild
+        blocked_memberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+        if member.id in blocked_memberids:
+            await member.move_to(channel=None, reason=f"User is blocked by cvc owner ({ownerid}).")
+            await channel.set_permissions(target=member, connect=False)
 
 async def jointocreate(bot, member, channel):
     guild=member.guild
@@ -95,12 +97,16 @@ async def jointocreate(bot, member, channel):
             vclimit = 0
             password = None
 
+            permitted_memberids=[]
+            blocked_memberids=[]
+
         print(name, status, vclimit, password)
 
         cvccategory = j2cchannel.category
 
         cvc = await cvccategory.create_voice_channel(name=name, reason="Creating a custom voicechannel", user_limit=vclimit, position=1, overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=permitted_memberids, blockedmemberids=blocked_memberids))
         await member.move_to(channel = cvc, reason = "Moving member from Join to create channel to the custom voicechannel")
+        await cvc.move(after=j2cchannel)
         await insert_into_current_cvctable(bot=bot, guildid=guild.id, ownerid=member.id, channelid=cvc.id, name=name, status=status, vclimit=vclimit, password=password)
         for permitted_memberid in permitted_memberids:
             await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=member.id, channelid=cvc.id, memberid=permitted_memberid)
@@ -366,7 +372,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
             embed = discord.Embed(title="Error", description="Only the owner can save the settings")
         await interaction.response.send_message(embed=embed)
 
-    @discord.ui.button(label="Claim", custom_id="savesessioncustomvoicechat", row=4)
+    @discord.ui.button(label="Claim", custom_id="claimcustomvoicechat", row=4)
     async def claim(self, interaction: discord.Interaction, button: discord.ui.button):
         bot = interaction.client
         channel = interaction.channel

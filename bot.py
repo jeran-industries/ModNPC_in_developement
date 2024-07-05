@@ -162,7 +162,7 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    await checkifuserisallowedtojoin(bot=bot, member=member, channel=after.channel)
+    await checkifuserisallowedtojoincvc(bot=bot, member=member, channel=after.channel)
     await voicechatupdate(bot, member, before, after)
     await cvc(bot=bot, member=member, beforechannel=before.channel, afterchannel=after.channel)
 

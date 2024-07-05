@@ -251,23 +251,23 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="Permit", custom_id="permitcustomvoicechat", row=1)
     async def permit(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=PermitSelect())
+        await interaction.response.send_message(view=PermitSelect(), ephemeral = True)
 
     @discord.ui.button(label="Unpermit", custom_id="unpermitcustomvoicechat", row=1)
     async def unpermit(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=UnPermitSelect())
+        await interaction.response.send_message(view=UnPermitSelect(), ephemeral = True)
 
     @discord.ui.button(label="Block", custom_id="blockcustomvoicechat", row=1)
     async def block(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=BlockSelect())
+        await interaction.response.send_message(view=BlockSelect(), ephemeral = True)
 
     @discord.ui.button(label="Unblock", custom_id="unblockcustomvoicechat", row=1)
     async def unblock(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=UnBlockSelect())
+        await interaction.response.send_message(view=UnBlockSelect(), ephemeral = True)
 
     @discord.ui.button(label="Add mod", custom_id="addmodcustomvoicechat", row=2)
     async def addmod(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=AddModSelect())
+        await interaction.response.send_message(view=AddModSelect(), ephemeral = True)
 
     @discord.ui.button(label="Remove mod", custom_id="removemodcustomvoicechat", row=2)
     async def removemod(self, interaction: discord.Interaction, button: discord.ui.button):
@@ -296,7 +296,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
         else:
             placeholder="Select a mod you want to be removed"
             status=False
-        await interaction.response.send_message(view=RemoveModSelect(options=labellist, placeholder=placeholder, status=status))
+        await interaction.response.send_message(view=RemoveModSelect(options=labellist, placeholder=placeholder, status=status), ephemeral = True)
     
     @discord.ui.button(label="Set Password", custom_id="setpasswordcustomvoicechat", row=2)
     async def setpassword(self, interaction: discord.Interaction, button: discord.ui.button):
@@ -399,8 +399,9 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
 
                 await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
-                
+                embed = discord.Embed(title="Success", description=f"{member.mention} claimed the channel.")
 
+        await interaction.response.send_message(embed=embed)    
 
 class RenameModal(discord.ui.Modal, title="How should your custom voicechat be called"):
     name = discord.ui.TextInput(label="Enter the channel's new name", placeholder="Enter the channel's new name", style=discord.TextStyle.short)

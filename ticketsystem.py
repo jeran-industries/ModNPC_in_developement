@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 #own modules:
-from sqlitehandler import get_opentickets_categoryid, get_closedtickets_categoryid, update_ticket_status, get_creatorid_ticket, get_ticketsystem_status, get_claimerid_ticket, insert_into_tickettable
+from sqlitehandler import get_opentickets_categoryid, get_closedtickets_categoryid, update_ticket_status, get_creatorid_ticket, get_ticketsystem_status, get_claimerid_ticket, insert_into_tickettable, get_permissions
 
 class OpenTicketButton(discord.ui.View):
     def __init__(self):
@@ -39,10 +39,13 @@ class WhyTicket(discord.ui.Modal, title="More details for your ticket:"):
 
         opentickets_categoryid = await get_opentickets_categoryid(bot=bot, guildid=guild.id)
         opentickets_category = guild.get_channel(opentickets_categoryid)
-        channel = await opentickets_category.create_text_channel(name="Ticket")
+
+        ticketprocessormemberids, ticketprocessorroleids = await get_permissions(bot=bot, permission="ticketprocessor", guildid = guild.id)
+        overwrites = await overwriteperms(bot=bot, guild=guild, ticketcreator = member, ticketprocessormemberids=ticketprocessormemberids, ticketprocessorroleids=ticketprocessorroleids)
+        channel = await opentickets_category.create_text_channel(name="Ticket", overwrites=overwrites)
         await channel.edit(name=f"Ticket-{channel.id}")
-        await channel.set_permissions(target=guild.default_role, read_messages=False, send_messages=False)
-        await channel.set_permissions(target=member, read_messages=True, send_messages=True)
+        #await channel.set_permissions(target=guild.default_role, read_messages=False, send_messages=False)
+        #await channel.set_permissions(target=member, read_messages=True, send_messages=True)
 
         await channel.send(embed=embed, view=Unclaimedticketbuttons())
 
@@ -50,6 +53,58 @@ class WhyTicket(discord.ui.Modal, title="More details for your ticket:"):
 
         embed = discord.Embed(title="Ticket was created", description=f"Your ticket was created in {channel.mention}")
         await interaction.response.send_message(embed=embed, ephemeral=True, delete_after=60)
+
+async def overwriteperms(bot, guild, ticketcreator, ticketprocessormemberids, ticketprocessorroleids):
+    overwrites =    {
+                        guild.default_role: discord.PermissionOverwrite(
+                            read_messages=False,
+                        )
+                    }
+    
+    ticketcreatoroverwrite =    {
+                                    ticketcreator: discord.PermissionOverwrite(
+                                        read_messages=True,
+                                        send_messages=True,
+                                    )
+                                }
+
+    overwrites.update(ticketcreatoroverwrite)
+
+    print(ticketprocessormemberids)
+    print(ticketprocessorroleids)
+    
+
+    if ticketprocessormemberids is not None:
+        for ticketprocessormemberid in ticketprocessormemberids:
+            if ticketprocessormemberid is not None:
+                ticketprocessormember = guild.get_member(ticketprocessormemberid)
+                print(ticketprocessormember.id)
+                ticketprocessormemberoverwrite =    {
+                                                        ticketprocessormember: discord.PermissionOverwrite(
+                                                            read_messages=True,
+                                                            send_messages=True,
+                                                        )
+                                                    }
+
+                overwrites.update(ticketprocessormemberoverwrite)
+
+    if ticketprocessorroleids is not None:
+        for ticketprocessorroleid in ticketprocessorroleids:
+            if ticketprocessorroleid is not None:
+                ticketprocessorrole = guild.get_role(ticketprocessorroleid)
+                print(ticketprocessorrole.id)
+                ticketprocessorroleoverwrite =    {
+                                                        ticketprocessorrole: discord.PermissionOverwrite(
+                                                            read_messages=True,
+                                                            send_messages=True,
+                                                        )
+                                                    }
+
+                overwrites.update(ticketprocessorroleoverwrite)
+    print(overwrites)
+    print()
+    print(ticketcreator.id)
+    return(overwrites)
 
 class Unclaimedticketbuttons(discord.ui.View):
     def __init__(self):

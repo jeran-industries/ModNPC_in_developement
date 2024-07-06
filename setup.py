@@ -5,7 +5,7 @@ import gettext
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid, check4cvcstatus, change_customvc_status
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid, check4cvcstatus, change_customvc_status, de_activate_permission, get_permissions
 from ticketsystem import OpenTicketButton
 
 async def setupcommand(interaction, bot):
@@ -569,12 +569,14 @@ async def ticketsystemsetup(interaction: discord.Interaction):
     guild = interaction.guild
     ticketsystem_status = await get_ticketsystem_status(bot=bot, guildid=guild.id)
     if ticketsystem_status is None or ticketsystem_status=="None":
-        ticketsystem_status = "False"
+        ticketsystem_status = False
+    else:
+        ticketsystem_status = False
     print(ticketsystem_status)
-    if ticketsystem_status == "False":
+    if ticketsystem_status is False:
         embed= discord.Embed(title="Ticketsystem Setup", description=f"Here you can activate. and select the channel for the channel to create a ticket. Please note that by selecting a channel, the selected channel will be cleaned up.")
         await interaction.response.send_message(embed=embed, view=activateticketsystemsetupview(), ephemeral = True)
-    if ticketsystem_status == "True":
+    if ticketsystem_status is True:
         embed= discord.Embed(title="Ticketsystem Setup", description=f"Here you can deactivate and select the channel for the channel to create a ticket. Please note that by selecting a channel, the selected channel will be cleaned up.")
         await interaction.response.send_message(embed=embed, view=deactivateticketsystemsetupview(), ephemeral = True)
     
@@ -593,6 +595,16 @@ class activateticketsystemsetupview(discord.ui.View):
         embed=discord.Embed(title=f"Here you can select the channel where to open a ticket.")
         await interaction.response.send_message(embed=embed, view = TicketsystemChannelView(), ephemeral = True)
 
+    @discord.ui.button(label="Add processor", custom_id="ticketsystemaddsupporter")
+    async def AddSupporterScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        embed=discord.Embed(title=f"Here you can add people and roles for processing tickets.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemAddProcessorSelect(), ephemeral = True)
+
+    @discord.ui.button(label="Remove processor", custom_id="ticketsystemremovesupporter")
+    async def RemoveSupporterScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        embed=discord.Embed(title=f"Here you can remove people and roles for processing tickets.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemRemoveProcessorSelect(), ephemeral = True)
+
 class deactivateticketsystemsetupview(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -603,10 +615,20 @@ class deactivateticketsystemsetupview(discord.ui.View):
         passembed=discord.Embed(title=f"Ticketsystem deactivated!!!")
         await interaction.response.send_message(embed=passembed, ephemeral = True)
 
-    @discord.ui.button(label="Select", custom_id="ticketsystemchannelselect")
+    @discord.ui.button(label="Select Channel", custom_id="ticketsystemchannelselect")
     async def SelectChannelDeactivateScript(self, interaction: discord.Interaction, button: discord.ui.button):
         embed=discord.Embed(title=f"Here you can select the channel where to open a ticket.")
         await interaction.response.send_message(embed=embed, view = TicketsystemChannelView(), ephemeral = True)
+
+    @discord.ui.button(label="Add processor", custom_id="ticketsystemaddsupporter")
+    async def AddSupporterScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        embed=discord.Embed(title=f"Here you can add people and roles for processing tickets.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemAddProcessorSelect(), ephemeral = True)
+
+    @discord.ui.button(label="Remove processor", custom_id="ticketsystemremovesupporter")
+    async def RemoveSupporterScript(self, interaction: discord.Interaction, button: discord.ui.button):
+        embed=discord.Embed(title=f"Here you can remove people and roles for processing tickets.")
+        await interaction.response.send_message(embed=embed, view = TicketsystemRemoveProcessorSelect(), ephemeral = True)
 
 class TicketsystemChannelView(discord.ui.View):
     def __init__(self):
@@ -656,6 +678,63 @@ class TicketsystemChannelSelectChannel(discord.ui.ChannelSelect):
             runningtestembed = discord.Embed(title="ERROR", description=f"The bot can't view the channel. Please make sure to activate `view channel` and `send messages` for the bot in {channel.mention}")
             await interaction.followup.send(embed=runningtestembed)
         #await interaction.response.send_message(content=f"Sucessfully given you {channel}")
+
+class TicketsystemAddProcessorSelect(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketsystemAddProcessorMentionableSelect())
+
+class TicketsystemAddProcessorMentionableSelect(discord.ui.MentionableSelect):
+    def __init__(self):
+        super().__init__(placeholder="Enter the role or user who will be allowed to process tickets.")
+
+    async def callback(self, interaction: discord.Interaction):
+        mentionables = self.values
+        bot=interaction.client
+        guild=interaction.guild
+        if isinstance(mentionables[0], discord.Role) is True: #Mentionable is a role
+            role = mentionables[0]
+            await de_activate_permission(bot=bot, guildid=guild.id, status=True, permission="ticketprocessor", roleid=role.id)
+            embed = discord.Embed(title="You added a role as a ticketprocessor", description=f"You added {role.mention} as a ticketprocessor")
+        else: #Mentionable is a member
+            member = mentionables[0]
+            await de_activate_permission(bot=bot, guildid=guild.id, status=True, permission="ticketprocessor", memberid=member.id)
+            embed = discord.Embed(title="You added a member as a ticketprocessor", description=f"You added {member.mention} as a ticketprocessor")
+        await interaction.response.send_message(embed=embed)
+
+class TicketsystemRemoveProcessorSelect(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketsystemRemoveProcessorMentionableSelect())
+
+class TicketsystemRemoveProcessorMentionableSelect(discord.ui.MentionableSelect):
+    def __init__(self):
+        super().__init__(placeholder="Enter the role or user who will be removed from process tickets.")
+
+    async def callback(self, interaction: discord.Interaction):
+        mentionables = self.values
+        bot=interaction.client
+        guild = interaction.guild
+
+        roleids, memberids = await get_permissions(bot=bot, permission="ticketprocessor", guildid=guild.id)
+
+        if isinstance(mentionables[0], discord.Role) is True: #Mentionable is a role
+            if mentionables[0].id in roleids:
+                role = mentionables[0]
+                await de_activate_permission(bot=bot, guildid=guild.id, status=False, permission="ticketprocessor", roleid=role.id)
+                embed = discord.Embed(title="You removed a role as a ticketprocessor.", description=f"You removed {role.mention} as a ticketprocessor.")
+            else:
+                embed = discord.Embed(title="This role never got access to the ticketsystem.")
+
+        else: #Mentionable is a member
+            if mentionables[0].id in memberids:
+                member = mentionables[0]
+                await de_activate_permission(bot=bot, guildid=guild.id, status=False, permission="ticketprocessor", memberid=member.id)
+                embed = discord.Embed(title="You removed a member as a ticketprocessor.", description=f"You removed {member.mention} as a ticketprocessor.")
+            else:
+                embed = discord.Embed(title="This member never got access to the ticketsystem.")
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 #Welcomemessages:
 async def welcomemessagessetup(interaction: discord.Interaction):

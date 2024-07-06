@@ -124,7 +124,7 @@ async def regularcheck4emptycvc(bot):
                     await voicechannel.delete(reason = "Deleting a custom voicechannel because it is empty.")
                     print("Deleted empty voicechannel in the regular check")
 
-async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberids):                
+async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberids):
 #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
     if status == 0:
         overwrites = {

@@ -35,7 +35,7 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable, create_permissiontable
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
 from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc, checkifuserisallowedtojoincvc, on_guild_join_rewrite_cvc_permissions
 
@@ -480,6 +480,7 @@ async def on_ready():
     await create_cvcbannedpeopletable(bot=bot)
     await create_current_cvctable(bot=bot)
     await create_current_cvcpermittedpeopletable(bot=bot)
+    await create_permissiontable(bot=bot)
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')

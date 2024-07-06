@@ -486,9 +486,82 @@ async def insert_into_guildtable(bot, guildid):
     ticketsystemopencategoryid=None
     ticketsystemclosedcategoryid=None
     async with bot.pool.acquire() as connection:
-        await connection.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (guildid, levelingsystemstatus, levelingpingmessagechannel, welcomemessagestatus, anonymousmessagecooldown, anonymousmessagestatus, botupdatestatus, botupdatechannelid, logchannelid, ticketsystemstatus, ticketsystemchannel, ticketsystemopencategoryid, ticketsystemclosedcategoryid, None, None))
+        await connection.execute("INSERT INTO guildsetup VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (guildid, levelingsystemstatus, levelingpingmessagechannel, welcomemessagestatus, anonymousmessagecooldown, anonymousmessagestatus, botupdatestatus, botupdatechannelid, logchannelid, ticketsystemstatus, ticketsystemchannel, ticketsystemopencategoryid, ticketsystemclosedcategoryid, None, None, None))
         await connection.commit()
     #await asqlite_insert_data(bot=bot, statement=f"INSERT INTO guildsetup VALUES ({guildid}, '{levelingsystemstatus}', '{levelingpingmessagechannel}', '{welcomemessagestatus}', '{anonymousmessagecooldown}', '{anonymousmessagestatus}', '{botupdatestatus}', '{botupdatechannelid}', '{logchannelid}', '{ticketsystemstatus}', '{ticketsystemchannel}', {ticketsystemopencategoryid}, {ticketsystemclosedcategoryid})")
+
+#permissions: permissiontable: roleid INTEGER, memberid INTEGER, permission TEXT, status BOOL
+
+#ticketsystempermissions: ticketprocessor
+async def de_activate_permission(bot, guildid, status, permission, roleid = None, memberid = None):
+    if roleid is not None:
+        permissionstatus=await get_permission_status(bot=bot, permission=permission, roleid=roleid)
+        if permissionstatus is not None:
+            if permissionstatus != status:
+                async with bot.pool.acquire() as connection:
+                    await connection.execute("UPDATE permissiontable SET status = ?, WHERE roleid = ? AND permission = ?", (status, roleid, permission))
+                    await connection.commit()
+                    return(None)
+            else:
+                return
+
+    elif memberid is not None:
+        permissionstatus=await get_permission_status(bot=bot, permission=permission, memberid=memberid)
+        if permissionstatus is not None:
+            if permissionstatus != status:
+                async with bot.pool.acquire() as connection:
+                    await connection.execute("UPDATE permissiontable SET status = ?, WHERE memberid = ? AND permission = ?", (status, memberid, permission))
+                    await connection.commit()
+                    return(None)
+            else:
+                return
+
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO permissiontable VALUES (?, ?, ?, ?, ?)", (guildid, roleid, memberid, permission, status))
+        await connection.commit()
+
+async def get_permissions(bot, permission, guildid):
+    #if roleid is not None and memberid is not None:
+    #    raise(Warning, "Only the roleid will be ")
+
+    async with bot.pool.acquire() as connection:
+        roleids = []
+        memberids = []
+        datacursor = await connection.execute("SELECT * FROM permissiontable WHERE guildid = ? AND permission = ?", (guildid, permission))
+        datarows = await datacursor.fetchall()
+        for datarow in datarows:
+            roleids.append(datarow["roleid"])
+            memberids.append(datarow["memberid"])
+        if roleids == []:
+            roleids = None
+        if memberids == []:
+            memberids = None
+        return(memberids, roleids)
+
+async def get_permission_status(bot, permission, roleid=None, memberid=None):
+    #if roleid is not None and memberid is not None:
+    #    raise(Warning, "Only the roleid will be ")
+
+    if roleid is not None:
+        async with bot.pool.acquire() as connection:
+            datacursor = await connection.execute("SELECT * FROM permissiontable WHERE roleid = ? AND permission = ?", (roleid, permission))
+            datarow = await datacursor.fetchone()
+            if datarow is not None:
+                return(datarow["status"])
+            else:
+                return(None)
+
+    elif memberid is not None:
+        async with bot.pool.acquire() as connection:
+            datacursor = await connection.execute("SELECT * FROM permissiontable WHERE memberid = ? AND permission = ?", (roleid, permission))
+            datarow = await datacursor.fetchone()
+            if datarow is not None:
+                return(datarow["status"])
+            else:
+                return(None)
+
+    else:
+        return(None)
 
 #creating tables:
 async def create_guildsetup_table(bot):
@@ -535,6 +608,10 @@ async def create_cvcbannedpeopletable(bot):
 #table cvcmodstable: guildid, ownerid, memberid
 async def create_cvcmodstable(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS cvcmodstable (guildid INTEGER, ownerid INTEGER, memberid INTEGER)") #status = 0(unlocked) 1(locked) 2(hidden)
+
+#permissiontable:
+async def create_permissiontable(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS permissiontable (guildid INTEGER, roleid INTEGER, memberid INTEGER, permission TEXT, status BOOL)")
 
 #create indexes:
 async def create_unique_index_member_table(bot):

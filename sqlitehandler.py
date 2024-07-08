@@ -5,21 +5,26 @@ import asqlite
 
 #autoroles:
 async def get_autorole(bot, membergroup, roleid):
-    roleid = await asqlite_pull_data(bot=bot, statement=f'SELECT * FROM autorole WHERE roleid = {roleid} AND membergroup = {membergroup}', data_to_return="roleid")
-    return(roleid)
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM autorole WHERE roleid = ? AND membergroup = ?", (roleid, membergroup))
+        datarow = await datacursor.fetchone()
+        return(datarow["roleid"])
 
 async def get_autoroles(bot, guildid, membergroup):
-    roleidsmembergroupusers = await asqlite_pull_all_data(bot=bot, statement=f'SELECT roleid FROM autorole WHERE guildid = {guildid} AND membergroup = {membergroup}', data_to_return="roleid")
-    return(roleidsmembergroupusers)
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (guildid, membergroup))
+        datarows = await datacursor.fetchall()
+        return(datarows)
 
 async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE autorole set membergroup = {membergroup} WHERE roleid = {roleid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE autorole SET membergroup = ? WHERE roleid = ?", (membergroup, roleid))
+        await connection.commit()
 
 async def insert_autorole(bot, guildid, roleid, membergroup):
     async with bot.pool.acquire() as connection:
         await connection.execute("INSERT INTO autorole VALUES (?, ?, ?)", (guildid, roleid, membergroup))
         await connection.commit()
-
 
 async def delete_all_autoroles(bot, guildid):
     async with bot.pool.acquire() as connection:
@@ -283,54 +288,88 @@ async def change_xp_by(bot, guildid, memberid, xptomodify, xptoset = None):
     if xptoset is not None:
         newxp = xptoset
     else:
-        xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="xp")
-        if xp==None:
+        async with bot.pool.acquire() as connection:
+            datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+            datarow = await datacursor.fetchone()
+        if datarow is None:
             xp=0
+        else:
+            xp = datarow["xp"]
         newxp = xp + xptomodify
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = {newxp} WHERE guildid = {guildid} AND memberid = {memberid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE membertable SET xp = ? WHERE guildid = ? AND memberid = ?", (newxp, guildid, memberid))
+        await connection.commit()
     return(newxp)
 
 async def update_voicetime(bot, guildid, memberid, voicetimetomodify = None):
     if voicetimetomodify is not None:
         voicetime = voicetimetomodify-1
     else:
-        voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="voicetime")
-        if voicetime==None:
+        async with bot.pool.acquire() as connection:
+            datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+            datarow = await datacursor.fetchone()
+        if datarow is None:
             voicetime=0
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = {voicetime + 1} WHERE guildid = {guildid} AND memberid = {memberid}")
+        else:
+            voicetime = datarow["voicetime"]
+    async with bot.pool.acquire() as connection:
+        voicetime = voicetime + 1
+        await connection.execute("UPDATE membertable SET voicetime = ? WHERE guildid = ? AND memberid = ?", (voicetime, guildid, memberid))
+        await connection.commit()
 
 async def update_messagecounter(bot, guildid, memberid, messagecountertomodify = None):
+    messagessent = 0
     if messagecountertomodify is not None:
         messagessent = messagecountertomodify-1
     else:
-        messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}", data_to_return="messagessent")
-        if messagessent is None:
-            messagessent = 0
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = {messagessent + 1} WHERE guildid = {guildid} AND memberid = {memberid}")
+        async with bot.pool.acquire() as connection:
+            datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+            datarow = await datacursor.fetchone()
+            if datarow is not None:
+                messagessent = datarow["messagessent"]
+    async with bot.pool.acquire() as connection:
+        messagessent = messagessent + 1
+        await connection.execute("UPDATE membertable SET messagessent = ? WHERE guildid = ? AND memberid = ?", (messagessent, guildid, memberid))
+        await connection.commit()
 
 async def reset_memberstats(bot, guildid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set messagessent = 0 WHERE guildid = {guildid}")
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set voicetime = 0 WHERE guildid = {guildid}")
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set xp = 0 WHERE guildid = {guildid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE membertable SET messagessent = ? WHERE guildid = ?", (0, guildid))
+        await connection.execute("UPDATE membertable SET voicetime = ? WHERE guildid = ?", (0, guildid))
+        await connection.execute("UPDATE membertable SET xp = ? WHERE guildid = ?", (0, guildid))
+        await connection.commit()
 
 async def get_lastupvote(bot, guildid, memberid):
-    lastupvote = await asqlite_pull_data(bot=bot, statement=f'SELECT last_upvote FROM membertable WHERE guildid = {guildid} AND memberid = {memberid}', data_to_return="last_upvote")
-    return(lastupvote)
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+        datarow = await datacursor.fetchone()
+        return(datarow["last_upvote"])
 
 async def update_lastupvote(bot, time, guildid, memberid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE membertable set last_upvote = {time} WHERE guildid = {guildid} AND memberid = {memberid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE membertable SET last_upvote = ? WHERE guildid = ? AND memberid = ?", (time, guildid, memberid))
+        await connection.commit()
 
 async def activate_levelsystem(bot, guildid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingsystemstatus = 1 WHERE guildid = {guildid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE guildsetup SET levelingsystemstatus = 1 WHERE guildid = ?", (guildid))
+        await connection.commit()
 
 async def deactivate_levelsystem(bot, guildid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingsystemstatus = 0 WHERE guildid = {guildid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE guildsetup SET levelingsystemstatus = 0 WHERE guildid = ?", (guildid))
+        await connection.commit()
 
 async def update_levelingpingchannel(bot, channelid, guildid):
-    await asqlite_update_data(bot=bot, statement=f"UPDATE guildsetup set levelingpingmessagechannel = {channelid} WHERE guildid = {guildid}")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE guildsetup SET levelingpingmessagechannel = ? WHERE guildid = ?", (channelid, guildid))
+        await connection.commit()
 
 async def get_levelrole(bot, roleid):
-    roleid=await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE roleid = {roleid}", data_to_return="roleid")
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM levelroles WHERE roleid = ?", (roleid))
+        datarow = await datacursor.fetchone()
+        roleid = datarow["roleid"]
     if roleid is None:
         return(False)
     else:
@@ -462,6 +501,22 @@ async def check_4_welcomemessage(bot, guildid):
 
 async def delete_welcomemessage(bot, guildid):
     await asqlite_delete(bot=bot, statement=f"DELETE FROM welcomemessagetable WHERE guildid = {guildid}")
+
+#membermanagement:
+async def check4member(bot, guildid, memberid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+        datarow = await datacursor.fetchone()
+        if datarow is None:
+            return(False)
+        else:
+            return(True)
+
+async def insert_new_member(bot, guildid, memberid, time, status):
+    async with bot.pool.acquire() as connection:
+        #guildid, memberid, messagessent, voicetime, xp, status, time when joined, last upvote
+        await connection.execute("INSERT INTO membertable VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, memberid, 0, 0, 0, status, time, 0))
+        await connection.commit()
 
 #guildmanagement:
 async def check_4_guild(bot, guildid):

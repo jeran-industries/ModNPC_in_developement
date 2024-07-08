@@ -440,7 +440,7 @@ async def on_guild_join(guild):
             break
         except:
             pass
-    embed = discord.Embed(title="New guild!", description=f"{member.guild.name} just joined the system: {inviteurl}")
+    embed = discord.Embed(title="New guild!", description=f"{guild.name} just joined the system: {inviteurl}")
     embed.add_field(name="Guildowner", value=guild.owner.name)
     embed.add_field(name="Membercount", value=guild.member_count)
     try:
@@ -487,7 +487,7 @@ async def on_ready():
         await database_checking_and_creating(bot, guild.id)
         guildcounter = guildcounter + 1
         for member in guild.members:
-            #new_member(member, connection)
+            await new_member(member=member, bot=bot)
             membercounter = membercounter + 1
             if member.id != guild.owner_id:
                 #print(member)

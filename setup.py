@@ -759,7 +759,7 @@ class WelcomemessageModal(discord.ui.Modal, title="What is the welcomemessage?")
         super().__init__()
     
     headerwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.paragraph)
-    contentwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.long)
+    contentwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.long, required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message(view=WelcomemessageConfirmation(channel=self.channel, headerwelcomemessage = self.headerwelcomemessage, contentwelcomemessage = self.contentwelcomemessage), ephemeral=True)

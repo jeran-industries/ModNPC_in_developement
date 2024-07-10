@@ -12,9 +12,12 @@ async def get_autorole(bot, membergroup, roleid):
 
 async def get_autoroles(bot, guildid, membergroup):
     async with bot.pool.acquire() as connection:
-        datacursor = await connection.execute("SELECT roleid FROM autorole WHERE guildid = ? AND membergroup = ?", (guildid, membergroup))
+        datacursor = await connection.execute("SELECT * FROM autorole WHERE guildid = ? AND membergroup = ?", (guildid, membergroup))
         datarows = await datacursor.fetchall()
-        return(datarows)
+        data = []
+        for datarow in datarows:
+            data.append(datarow["roleid"])
+        return(data)
 
 async def update_autorole_2_other_membergroup(bot, membergroup, roleid):
     async with bot.pool.acquire() as connection:
@@ -377,23 +380,31 @@ async def get_levelrole(bot, roleid):
 
 async def get_all_levelroleids(bot, guildid):
     #levelroleids = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (interaction.guild.id, )).fetchall()
-    roleids=await asqlite_pull_all_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid}", data_to_return="roleid")
-    return(roleids)
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (guildid))
+        datarows = await datacursor.fetchall()
+        return(datarows)
 
 async def check4levelroles(bot, guildid):
-    roleid=await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid}", data_to_return="roleid")
-    if roleid is None:
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (guildid))
+        datarow = await datacursor.fetchone()
+    if datarow is None:
         return(False)
     else:
         return(True)
 
 async def create_levelrole(bot, guildid, roleid, level, keeprole):
     #cursor.execute(f"INSERT INTO levelroles VALUES ({interaction.guild.id}, {self.role[0].id}, {self.level}, {self.keeprole})") #write into the table the data
-    await asqlite_insert_data(bot=bot, statement=f"INSERT INTO levelroles VALUES ({guildid}, {roleid}, {level}, {keeprole})")
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO levelroles VALUES (?, ?, ?, ?)", (guildid, roleid, level, keeprole))
+        await connection.commit()
 
 async def delete_levelrole(bot, roleid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM levelroles WHERE roleid = ?", (roleid))
+        await connection.commit()
     #cursor.execute("DELETE FROM levelroles WHERE roleid = ?", (self.values[0],))
-    await asqlite_delete(bot=bot, statement=f"DELETE FROM levelroles WHERE roleid = {roleid}")
 
 #logging:
 async def get_logchannelid(bot, guildid):

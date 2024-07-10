@@ -30,7 +30,7 @@ import discord
 import builtins
 
 #own modules:
-from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user, add_blocked_person, remove_blocked_person, change_ownerid
+from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user, add_blocked_person, remove_blocked_person, change_ownerid, remove_permitted_user, change_customvc_status
 
 async def cvc(bot, member, beforechannel, afterchannel):
     if beforechannel is not None:
@@ -54,7 +54,7 @@ async def check4emptycvc(bot, member, channel):
         try:
             await channel.delete(reason = "Deleting a custom voicechannel because it is empty.")
         except Exception as error:
-            bot.discorderrorlog(error)
+            bot.discorderrorlog(error=error)
         await delete_current_cvc(bot=bot, channelid=channel.id)
         await delete_current_permits(bot=bot, channelid=channel.id)
         return(True)
@@ -63,7 +63,7 @@ async def check4emptycvc(bot, member, channel):
 
 async def on_guild_join_rewrite_cvc_permissions(bot, member):
     guild = member.guild
-    ownerids = get_cvc_where_member_blocked(bot=bot, guildid=guild.id, memberid=member.id)
+    ownerids = await get_cvc_where_member_blocked(bot=bot, guildid=guild.id, memberid=member.id)
     if ownerid != []:
         for ownerid in ownerids:
             channelid, name, status, vclimit, password = await get_current_cvc_by_ownerid(bot=bot, guildid=guild.id, ownerid=ownerid)
@@ -156,10 +156,6 @@ async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberid
             guild.default_role: discord.PermissionOverwrite(
             send_messages=False,
             connect=False,
-            ),
-            Role1: discord.PermissionOverwrite(
-            read_messages=True,
-            send_messages=True,
             )
         }
 
@@ -179,10 +175,6 @@ async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberid
             view_channel=False,
             send_messages=False,
             connect=False,
-            ),
-            Role1: discord.PermissionOverwrite(
-            read_messages=True,
-            send_messages=True,
             )
         }
 
@@ -231,14 +223,17 @@ class customvoicechatcontrolmenu(discord.ui.View):
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+        channelmembers = interaction.channel.members
 
         if member.id == ownerid or member.id in modids:
             if status != 1: #check if channel is alr locked or not
                 status = 1
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
-                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
+                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+                for channelmember in channelmembers:
+                    await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=channelmember)
                 await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
-                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} hided the channel.")
             else: #channel is alr locked
                 embed = discord.Embed(title="Error", description=f"The channel is already hidden")
@@ -264,7 +259,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
                 await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
-                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} unhided the channel.")
             else: #channel is alr locked
                 embed = discord.Embed(title="Error", description=f"The channel is already unhidden")
@@ -290,7 +285,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
                 await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
-                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} hided the channel.")
             else: #channel is alr locked
                 embed = discord.Embed(title="Error", description=f"The channel is already hidden")
@@ -316,7 +311,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
                 await change_customvc_status(bot=bot, status=status, guildid=guild.id, channelid=channel.id)
-                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} unhided the channel.")
             else: #channel is alr locked
                 embed = discord.Embed(title="Error", description=f"The channel is already unhidden")
@@ -411,7 +406,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
         blockedmention = ""
         for blockedmemberid in blockedmemberids:
             blockedmention = f"<@{blockedmemberid}>\n" + blockedmention
-        embed.add_field(name="Blocked members",value=permittedmention, inline=False)
+        embed.add_field(name="Blocked members",value=blockedmention, inline=False)
 
         await interaction.response.send_message(embed=embed)
     
@@ -474,7 +469,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
 
-                await channel.set_permissions(overwrite=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
+                await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} claimed the channel.")
 
         await interaction.response.send_message(embed=embed)    
@@ -625,14 +620,18 @@ class BlockSelectMenu(discord.ui.UserSelect):
         guild = interaction.guild
         member = self.values[0]
         channel = interaction.channel
+        user = interaction.user
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         currentpermittedmembers = await get_current_permitted_member(bot=bot, channelid=channel.id)
         permittedmembers = await get_permitted_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
 
-        if member.id == ownerid:
+        if user.id == ownerid:
             if member.id in permittedmembers:
                 await remove_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=member.id)
                 await delete_current_permitted_user(bot=bot, channelid=channel.id, memberid=member.id)
+                if member.id in modids:
+                    await remove_mod(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=member.id)
             elif member.id in currentpermittedmembers:
                 await delete_current_permitted_user(bot=bot, channelid=channel.id, memberid=member.id)
             await channel.set_permissions(target=member, connect=False)
@@ -661,8 +660,8 @@ class UnBlockSelectMenu(discord.ui.UserSelect):
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         blocked_people = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
 
-        if blocked_person in blocked_people:
-            if member.id == ownerid:
+        if member.id in blocked_people:
+            if user.id == ownerid:
                 await channel.set_permissions(target=member, connect=True)
 
             await remove_blocked_person(bot=bot, guildid=guild.id, ownerid=user.id, memberid=member.id)
@@ -693,7 +692,7 @@ class AddModSelectMenu(discord.ui.UserSelect):
                 embed = discord.Embed(title="Success", description=f"You already added {self.values[0].mention} as a mod.")
             elif len(mods) < 26:
                 await add_mod(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=self.values[0].id)
-                await add_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=member.id)
+                await add_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=self.values[0].id)
                 embed = discord.Embed(title="Success", description=f"You added {self.values[0].mention} as a mod.")
             else:
                 embed = discord.Embed(title="Error", description="You cant have more than 25 mods.")
@@ -718,7 +717,7 @@ class RemoveModSelectMenu(discord.ui.Select):
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         if member.id == ownerid:
             await remove_mod(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=self.values[0])
-            embed = discord.Embed(title="Success", description=f"You added {self.values[0]} as a mod.")
+            embed = discord.Embed(title="Success", description=f"You removed <@{self.values[0]}> as a mod.")
         else:
             embed = discord.Embed(title="Error", description="You aren't the owner of this channel.")
         await interaction.response.send_message(embed=embed)

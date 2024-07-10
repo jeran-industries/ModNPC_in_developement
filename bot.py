@@ -82,12 +82,12 @@ class MyBot(commands.Bot):
         if ERRORLOGCHANNELID is None:
             print("im logging onto discord")
             errorlogchannel = bot.get_channel(ERRORLOGCHANNELID)
-            embed = discord.Embed(title=f"Error: {type(error)}", description=error)
+            embed = discord.Embed(title=f"Error: typeoferror", description=error)
             await errorlogchannel.send(embed=embed)
             
-        with open("database/discord.log", 'a', encoding='utf-8') as f:
-            print("im logging into file")
-            f.write(f"[{datetime.datetime.now(datetime.timezone.utc)}] [ERROR   ] {type(error)} detected by the bot error logger \n {error}")
+        #with open("database/discord.log", 'a', encoding='utf-8') as f:
+        #    print("im logging into file")
+        #    f.write(f"[{datetime.datetime.now(datetime.timezone.utc)}] [ERROR   ] {type(error)} detected by the bot error logger \n {error}")
         
 bot = MyBot()
 
@@ -103,10 +103,10 @@ async def on_member_join(member):
     print(channel)
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     try:
-        channel.send(embed=embed)
+        await channel.send(embed=embed)
     except Exception as error:
         print(error)
-        #await bot.discorderrorlog(error)
+        #await bot.discorderrorlog(error=str(error))
 
     await new_member(member, bot)
 
@@ -126,12 +126,13 @@ async def on_member_join(member):
     except Exception as error:
         print(error)
         #await bot.discorderrorlog(error)
-        
+
+    await add_autorole_2_user(bot=bot, member=member)    
     try:
         await add_autorole_2_user(bot=bot, member=member)
     except Exception as error:
         print(error)
-        await bot.discorderrorlog(error)
+        #await bot.discorderrorlog(error=str(error))
 
 @tasks.loop(minutes=1)
 async def one_minute_loop():

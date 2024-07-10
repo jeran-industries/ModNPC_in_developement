@@ -237,6 +237,11 @@ async def change_customvc_status(bot, status, guildid, channelid = None):
             await connection.execute("UPDATE guildsetup set jointocreatechannelid = ? WHERE guildid = ?", (channelid, guildid))
         await connection.commit()
 
+async def change_customvcstatus(bot, status, channelid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE currentcvctable set status = ? WHERE channelid = ?", (status, channelid))
+        await connection.commit()
+
 async def change_ownerid(bot, channelid, ownerid):
     async with bot.pool.acquire() as connection:
         await connection.execute("UPDATE currentcvctable set ownerid = ? WHERE channelid = ?", (ownerid, channelid))

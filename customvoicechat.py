@@ -286,7 +286,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
             if status != 2: #check if channel is alr locked or not
                 status = 2
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
-                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
+                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} hided the channel.")

@@ -8,7 +8,10 @@ async def get_autorole(bot, membergroup, roleid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM autorole WHERE roleid = ? AND membergroup = ?", (roleid, membergroup))
         datarow = await datacursor.fetchone()
-        return(datarow["roleid"])
+        if datarow is not None:
+            return(datarow["roleid"])
+        else:
+            return(None)
 
 async def get_autoroles(bot, guildid, membergroup):
     async with bot.pool.acquire() as connection:

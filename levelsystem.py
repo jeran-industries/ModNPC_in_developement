@@ -128,6 +128,7 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     bot = interaction.client
     rankcardgenerator(bot, member.display_name, member.id, rank, xp, level, guildid)
     file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
+    await os.remove(f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
     #await interaction.followup.send(file = file, view=rankcardbuttons(bot, owner=member, rankcard=file))
     await interaction.followup.send(file=file)
 

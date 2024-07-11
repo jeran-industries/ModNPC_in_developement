@@ -374,7 +374,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
     
     @discord.ui.button(label="🚪", custom_id="kickcustomvoicechat", row=3)
     async def kick(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(view=KickSelect())
+        await interaction.response.send_message(view=KickSelect(), ephemeral = True)
 
     @discord.ui.button(label=" 💡 ", custom_id="listmodscustomvoicechat", row=3)
     async def cvcinfo(self, interaction: discord.Interaction, button: discord.ui.button):

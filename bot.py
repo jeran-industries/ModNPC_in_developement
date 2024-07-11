@@ -200,8 +200,8 @@ async def about_me(interaction: discord.Interaction):
     embed = discord.Embed(title = "Here are some interesting links:")
     embed.add_field(name = f"Github Page:", value = f"https://github.com/jeran-industries/modnpc_in_developement", inline = False)
     embed.add_field(name = f"Webdashboard:", value = f"https://jeran.polarlabs.io/modnpc/webdashboard", inline = False)
-    embed.add_field(name = f"Privacy Policy:", value = f"https://jeran.polarlabs.io/modnpc/privacy", inline = False)
-    embed.add_field(name = f"Terms of Service:", value = f"https://jeran.polarlabs.io/modnpc/tos", inline = False)
+    embed.add_field(name = f"Privacy Policy:", value = f"https://github.com/jeran-industries/ModNPC_in_developement/blob/v1.2.4/ToS.txt", inline = False)
+    embed.add_field(name = f"Terms of Service:", value = f"https://github.com/jeran-industries/ModNPC_in_developement/blob/v1.2.4/ToS.txt", inline = False)
     embed.add_field(name = f"Our patreon:heart::", value = f"https://patreon.com/modnpc", inline = False)
     await interaction.response.send_message(embed = embed, delete_after=60)
 

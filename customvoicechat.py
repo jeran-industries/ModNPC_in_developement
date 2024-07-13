@@ -11,26 +11,27 @@
 
 #commands:
 #/cvc_join_request: if accepted by mods or owner permits person and adds person to currentcvcpermittedpeopletable
-#/cvc_claim: changes the channel to the customvoicechat if it exists if not: already existing channel gets added to database, only if owner or mods arent there anymore, changes ownerid of currentcvctable
-#/cvc_rename: renames the cvc if user is mod or owner, changes currentcvctable
-#/cvc_limit: changes the limit of the vc if user is mod or owner, changes currentcvctable
-#/cvc_permit: permit a person by their memberid or selectmenu if user is mod or owner to currentcvcpermittedpeopletable
-#/cvc_unpermit: unpermits a person by their memberid or selectmenu if user is mod or owner from cvcpermittedpeopletable
-#/cvc_block: blocks a person by their memberid or selectmenu out of own cvc and if user is mod out of the owners cvc
-#/cvc_unblock: unblocks a person by their memberid or selectmenu out of own cvc and if user is mod out of the owners cvc
-#/cvc_hide: hides the channel from all users and saves to currentcvctable
-#/cvc_unhide: unhides the channel from all users and saves to currentcvctable
-#/cvc_addmod: adds a mod if user is owner
-#/cvc_removemod: removes a mod if user is owner
+#/cvc_claim: changes the channel to the customvoicechat if it exists if not: already existing channel gets added to database, only if owner or mods arent there anymore, changes ownerid of currentcvctable x
+#/cvc_rename: renames the cvc if user is mod or owner, changes currentcvctable x
+#/cvc_limit: changes the limit of the vc if user is mod or owner, changes currentcvctable x
+#/cvc_permit: permit a person by their memberid or selectmenu if user is mod or owner to currentcvcpermittedpeopletable x
+#/cvc_unpermit: unpermits a person by their memberid or selectmenu if user is mod or owner from cvcpermittedpeopletable x
+#/cvc_block: blocks a person by their memberid or selectmenu out of own cvc and if user is mod out of the owners cvc x
+#/cvc_unblock: unblocks a person by their memberid or selectmenu out of own cvc and if user is mod out of the owners cvc x
+#/cvc_hide: hides the channel from all users and saves to currentcvctable x
+#/cvc_unhide: unhides the channel from all users and saves to currentcvctable x
+#/cvc_addmod: adds a mod if user is owner x
+#/cvc_removemod: removes a mod if user is owner x
 #/cvc_activaterecordmode: activate recording mode if user is owner or mod
 #/cvc_deactivaterecordmode: deactivate recording mode if user is owner or mod
-#/cvc_savesession: adds permitted people from currentcvcpermittedpeopletable to cvcpermittedpeopletable, 
+#/cvc_savesession: adds permitted people from currentcvcpermittedpeopletable to cvcpermittedpeopletable x
 
 import discord
 import builtins
+import hashlib
 
 #own modules:
-from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user, add_blocked_person, remove_blocked_person, change_ownerid, remove_permitted_user, change_customvcstatus
+from sqlitehandler import check4jointocreatechannel, check4savedcvc, check4currentcvc, get_cvc, get_current_cvc, get_current_cvcs, get_mods, add_mod, remove_mod, insert_cvc, insert_into_current_cvctable, get_permitted_member, get_current_permitted_member, delete_current_cvc, rename_current_cvc, limit_current_cvc, add_current_permitted_user, add_permitted_user, delete_current_permits, update_cvc, get_blocked_member, get_cvc_where_member_blocked, get_current_cvc_by_ownerid, delete_current_permitted_user, add_blocked_person, remove_blocked_person, change_ownerid, remove_permitted_user, change_customvcstatus, change_password
 
 async def cvc(bot, member, beforechannel, afterchannel):
     if beforechannel is not None:
@@ -78,6 +79,153 @@ async def checkifuserisallowedtojoincvc(bot, member, channel):
         if member.id in blocked_memberids:
             await member.move_to(channel=None, reason=f"User is blocked by cvc owner ({ownerid}).")
             await channel.set_permissions(target=member, connect=False)
+
+async def joinreqcommand(bot, interaction, member):
+    channel = member.voice.channel
+    guild = interaction.guild
+
+    ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+    blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+    if interaction.user in blockedmemberids:
+        embed = discord.Embed(title="You are blocked", description=f"You cant join the channel from <@{ownerid}> because you are blocked.")
+        await interaction.response.send_message(embed=embed)
+    else:
+        if password is not None:
+            embed = discord.Embed(title="The owner set a password", description=f"You have to enter the right password to be able to join the channel from <@{ownerid}>.")
+            await interaction.response.send_message(embed=embed, view = enterpasswordview(channel=channel, interaction=interaction), ephemeral = True)
+        else:
+            await sendjoinreq(ownerid=ownerid, member=interaction.user, channel=channel, interaction=interaction)
+
+class enterpasswordview(discord.ui.View):
+    def __init__(self, channel, interaction):
+        self.channel=channel
+        self.interaction=interaction
+        super().__init__(timeout=None)
+
+    @discord.ui.button(emoji="🔑", label="Enter Password", custom_id="enterpasswordbutton")
+    async def enterpasswordbutton(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_modal(EnterPasswordModal(channel=self.channel, interaction=self.interaction))
+
+class EnterPasswordModal(discord.ui.Modal, title="Enter the password"):
+    def __init__(self, channel, interaction):
+        self.channel = channel
+        self.interaction=interaction
+        super().__init__(timeout=None)
+
+    enteredpassword = discord.ui.TextInput(label="Enter the password", style=discord.TextStyle.short, max_length=16)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        bot = interaction.client
+        channel = self.channel
+        oldinteraction = self.interaction
+        message = await oldinteraction.original_response()
+        enteredpassword = str(self.enteredpassword)
+        guild = interaction.guild
+        member = interaction.user
+
+        ownerid, name, status, vclimit, hashedpassword = await get_current_cvc(bot=bot, channelid=channel.id)
+
+        hashenteredpassword = hash_password(enteredpassword)
+
+        print(enteredpassword)
+        print(hashenteredpassword)
+        print(hashedpassword)
+        
+
+        if hashenteredpassword == hashedpassword:
+            await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=member.id)
+            await channel.set_permissions(target=member, connect=True)
+            embed = discord.Embed(title="Password accepted", description=f"You can now join {channel.mention}.")
+            await message.edit(content=f"{member.mention}", embed=embed, view=joinbuttonview(url=channel.jump_url))
+
+            embed = discord.Embed(title="Success", description=f"You entered the right password")
+            await interaction.response.send_message(embed=embed, ephemeral = True, delete_after=1)
+        else:
+            embed = discord.Embed(title="Error", description=f"You entered the false password")
+            await interaction.response.send_message(embed=embed, ephemeral = True, delete_after=10)
+
+async def sendjoinreq(ownerid, member, channel, interaction):
+    embed = discord.Embed(title="New join request", description=f"{member.mention} wants to join your channel. You have 5 minutes to accept the join request.")
+    await interaction.response.send_message(content=f"<@{ownerid}>", embed=embed, view=joinreqview(interaction=interaction, channel=channel, member=member))
+
+class joinreqview(discord.ui.View):
+    def __init__(self, interaction, channel, member):
+        self.interaction=interaction
+        self.channel=channel
+        self.member=member
+        super().__init__(timeout=300)
+
+    async def on_timeout(self):
+        interaction = self.interaction
+        message = await interaction.original_response()
+        channel = self.channel
+        member = self.member
+        bot = interaction.client
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
+
+        embed = discord.Embed(title="Join request timed out", description=f"Your join request to {channel.mention} timed out.")
+
+        await message.edit(content=f"{member.mention}", embed=embed, view=None)
+
+    @discord.ui.button(label="Accept", custom_id="acceptjoinreq")
+    async def acceptjoinreq(self, interaction: discord.Interaction, button: discord.ui.button):
+        oldinteraction = self.interaction
+        message = await oldinteraction.original_response()
+        channel = self.channel
+        member = self.member
+        user = interaction.user
+        bot = interaction.client
+        guild = interaction.guild
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+        
+
+        if user.id == ownerid or user.id in modids:
+            await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=member.id)
+            await channel.set_permissions(target=member, connect=True)
+            embed = discord.Embed(title="Join request accepted", description=f"Your join request to {channel.mention} got accepted.")
+            await message.edit(content=f"{member.mention}", embed=embed, view=joinbuttonview(url=channel.jump_url))
+
+            embed = discord.Embed(title="Success", description=f"You accepted the join request.")
+            await interaction.response.send_message(embed=embed, ephemeral = True, delete_after=5)
+
+        else:
+            embed = discord.Embed(title="Error", description=f"You can't accept this join request.")
+            await interaction.response.send_message(embed=embed, ephemeral = True)
+
+    @discord.ui.button(label="Decline", custom_id="declinejoinreq")
+    async def declinejoinreq(self, interaction: discord.Interaction, button: discord.ui.button):
+        oldinteraction = self.interaction
+        message = await oldinteraction.original_response()
+        channel = self.channel
+        member = self.member
+        user = interaction.user
+        bot = interaction.client
+        guild = interaction.guild
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+        modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+
+        if user.id is ownerid or user.id in modids:
+            embed = discord.Embed(title="Join request declined", description=f"Your join request to {channel.mention} got declined.")
+            await message.edit(content=f"{member.mention}", embed=embed, view=None)
+
+        else:
+            embed = discord.Embed(title="Error", description=f"You can't decline this join request.")
+            await interaction.response.send_message(embed=embed, ephemeral = True)
+
+class joinbuttonview(discord.ui.View):
+    def __init__(self, url):
+        self.url = url
+        super().__init__(timeout=None)
+        self.add_item(joinbutton(url=self.url))
+
+class joinbutton(discord.ui.Button):
+    def __init__(self, custom_id = "joinbutton", url=None):
+        super().__init__(label="Join channel", url = url)
 
 async def jointocreate(bot, member, channel):
     guild=member.guild
@@ -354,14 +502,16 @@ class customvoicechatcontrolmenu(discord.ui.View):
         options=[]
         for modid in modids:
             mod = guild.get_member(modid)
-            options.append(f"discord.SelectOption(label={mod.display_name}, description={mod.name})")
+            if mod is not None:
+                options.append(f"discord.SelectOption(label={mod.display_name}, description={mod.name})")
 
         labellist = []
         for modid in modids:
             mod = guild.get_member(modid)
             #levelrole = discord.utils.get(guild.roles, id=levelroleid)
-            labellist.append(discord.SelectOption(label=mod.display_name, description=mod.name, value=mod.id),)
-            print(labellist)
+            if mod is not None:
+                labellist.append(discord.SelectOption(label=mod.display_name, description=mod.name, value=mod.id),)
+                print(labellist)
         
         if modids == []:
             placeholder="You dont have any mods"
@@ -479,7 +629,17 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label=" 🔑 ", custom_id="setpasswordcustomvoicechat", row=4)
     async def setpassword(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+        user = interaction.user
+        channel = user.voice.channel
+        bot = interaction.client
+
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
+        if ownerid == user.id:
+            await interaction.response.send_modal(SetPasswordModal())
+        
+        else:
+            embed = discord.Embed(title="Error", description="You aren't the owner of this channel.")
 
 class RenameModal(discord.ui.Modal, title="How should your custom voicechat be called"):
     name = discord.ui.TextInput(label="Enter the channel's new name", placeholder="Enter the channel's new name", style=discord.TextStyle.short)
@@ -787,3 +947,27 @@ class KickSelectMenu(discord.ui.UserSelect):
             embed = discord.Embed(title="Error", description=f"You cant kick {member.mention}, because you dont own this channel and arent a mod.")
         
         await interaction.response.send_message(embed=embed)
+
+class SetPasswordModal(discord.ui.Modal, title="Enter the new password"):
+    password = discord.ui.TextInput(label="Enter the channel's new password", placeholder="Enter the channel's new password", required=False, style=discord.TextStyle.short, max_length=16)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        password = str(self.password)
+        hashedpassword = hash_password(password=password)
+        bot = interaction.client
+        user = interaction.user
+        channel = user.voice.channel
+        print(password)
+        if password is None or password == "":
+            print("reset password")
+            await change_password(bot=bot, channelid=channel.id, password=None)
+        else:
+            await change_password(bot=bot, channelid=channel.id, password=hashedpassword)
+
+        embed = discord.Embed(title="Success", description=f"You changed the password to `{password}`")
+        await interaction.response.send_message(embed = embed, ephemeral = True)
+
+def hash_password(password):
+    salt = b"\x83\xcf\xe4\xde\x8a;\x1e\x94\xe9\x9fB_7V\xd34Z\x01'\xcc\xe5\xc7cxT\x1d\x0c\xbcn<#$"  #os.urandom(32)
+    hashedpassword = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt=salt, iterations = 100000) # The hash digest algorithm for HMAC # Convert the password to bytes#salt, # Provide the salt # Convert the password to bytes # It is recommended to use at least 100,000 iterations of SHA-256 
+    return(hashedpassword)

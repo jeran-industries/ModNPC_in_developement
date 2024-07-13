@@ -37,7 +37,7 @@ from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
 from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable, create_permissiontable
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
-from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc, checkifuserisallowedtojoincvc, on_guild_join_rewrite_cvc_permissions
+from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc, checkifuserisallowedtojoincvc, on_guild_join_rewrite_cvc_permissions, joinreqcommand
 
 #from "dateiname" import "name der funktion"
 
@@ -279,7 +279,7 @@ async def cvc_controlmenu(interaction:discord.Interaction):
 
 @bot.tree.command()
 async def cvc_join_request(interaction:discord.Interaction, member:discord.Member):
-    await interaction.response.send_message(view=customvoicechatcontrolmenu())
+    await joinreqcommand(bot=bot, interaction=interaction, member=member)
 
 @bot.tree.command()
 async def cvc_claim(interaction:discord.Interaction, member:discord.Member):

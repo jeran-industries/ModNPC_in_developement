@@ -250,6 +250,11 @@ async def change_ownerid(bot, channelid, ownerid):
         await connection.execute("UPDATE currentcvctable set ownerid = ? WHERE channelid = ?", (ownerid, channelid))
         await connection.commit()
 
+async def change_password(bot, channelid, password):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("UPDATE currentcvctable set password = ? WHERE channelid = ?", (password, channelid))
+        await connection.commit()
+
 async def add_mod(bot, guildid, ownerid, memberid):
     async with bot.pool.acquire() as connection:
         await connection.execute("INSERT INTO cvcmodstable VALUES (?, ?, ?)", (guildid, ownerid, memberid))

@@ -24,7 +24,7 @@ from selfroles import create_selfrole, add_selfrole, add_selfrole_2_member, remo
 from poll import poll_creating, new_pollreaction_4_log, remove_pollreaction_4_log, editingpollafternewreaction, editingpollafterremovedreaction
 from levelsystem import new_message, new_minute_in_vc, rankcommand, addxp2user, removexpfromuser, checkleaderboard, claimcommand
 from log import messagesenteventlog, messageeditedeventlog, messagedeletedeventlog, voicechatupdate, memberjoin, memberleave, memberupdate, memberban, memberunban, invitecreate, invitedelete
-from membermanagement import new_member
+from membermanagement import new_member, warncommand
 from dice import throwdicecommand
 from welcomemessage import sendwelcomemessage
 from help import answer4help, answer4help4mods, helpwithsetup, helpcommand
@@ -209,6 +209,11 @@ async def about_me(interaction: discord.Interaction):
 async def raise_exception(ctx):
     raise Exception("lmao")
 
+#membermanagement
+#
+#warns member
+
+#help command
 @bot.tree.command()
 async def help(interaction: discord.Interaction):
     await helpcommand(interaction)

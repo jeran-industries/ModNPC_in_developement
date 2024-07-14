@@ -1,4 +1,3 @@
-import asqlite
 
 #anounymous messages:
 

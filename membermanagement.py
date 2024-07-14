@@ -47,7 +47,6 @@ async def new_member(member, bot): #new member -> new jsonfile with member_id
     if await check4member(bot=bot, guildid=0, memberid=member.id) is False:
         status = "Joined"
         await insert_new_member(bot=bot, guildid=0, memberid=member.id, time=time, status=status)
-        try:
-            await asqlite_insert_data(bot=bot, statement=f"INSERT INTO membertable VALUES ({0}, {member.id}, {0}, {0}, {0}, {0}, {time}, {0})")
-        except:
-            pass
+
+async def warncommand(bot, member, reason):
+    pass

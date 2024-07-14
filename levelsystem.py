@@ -11,7 +11,7 @@ import contextlib
 from membermanagement import new_member
 from link2id import channellink2channelid, channellink2guildid, link2channelid, link2messageid
 from checks import check4dm, check4dm_message
-from sqlitehandler import change_xp_by, get_lastupvote, update_voicetime, update_lastupvote, update_messagecounter ,asqlite_insert_data, asqlite_pull_data, asqlite_update_data
+from sqlitehandler import change_xp_by, get_lastupvote, update_voicetime, update_lastupvote, update_messagecounter ,asqlite_insert_data, asqlite_pull_data, asqlite_update_data, get_xp_voicetime_messagessent
 
 async def new_message(bot, message): #make messagecounter bigger in json file bigger
     #v1:
@@ -100,9 +100,9 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     except AttributeError:
         guildid = 0
 
-    messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
-    voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="voicetime")
-    xp = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="xp")
+    #messagessent = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="messagessent")
+    #voicetime = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildid} AND memberid = {member.id}", data_to_return="voicetime")
+    xp, voicetime, messagessent = await get_xp_voicetime_messagessent(bot=bot, guildid=guildid, memberid=member.id)
 
     level = math.floor((xp ** 0.5) / 5) #f(x) = x^0.5 / 5 => 5 * f(x) = x^0.5 => log5 * f(x) (0.5) = x
     rank = await checkleaderboard(interaction, bot, member.id)
@@ -128,9 +128,10 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     bot = interaction.client
     rankcardgenerator(bot, member.display_name, member.id, rank, xp, level, guildid)
     file = discord.File(f"./database/rankcards/generated/{guildid}/{member.id}.png")
-    await os.remove(f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
+    os.remove(f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
     #await interaction.followup.send(file = file, view=rankcardbuttons(bot, owner=member, rankcard=file))
     await interaction.followup.send(file=file)
+    os.remove(f"./database/rankcards/generated/{guildid}/{member.id}.png")
 
     #v1:
     #server_id = ctx.guild.id

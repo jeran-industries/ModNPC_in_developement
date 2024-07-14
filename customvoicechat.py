@@ -381,7 +381,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
                 for channelmember in channelmembers:
-                    await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=channelmember.id)
+                    await channel.set_permissions(target=channelmember, connect=True)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} locked the channel.")
@@ -425,6 +425,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
         channel = interaction.channel
         member = interaction.user
         guild = interaction.guild
+        channelmembers = interaction.channel.members
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
@@ -435,10 +436,12 @@ class customvoicechatcontrolmenu(discord.ui.View):
                 status = 2
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
+                for channelmember in channelmembers:
+                    await channel.set_permissions(target=channelmember, connect=True, view_channel=True)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} hided the channel.")
-            else: #channel is alr locked
+            else: #channel is alr hidden
                 embed = discord.Embed(title="Error", description=f"The channel is already hidden")
         else:
             embed = discord.Embed(title="Error", description=f"You dont have the rights to hide this channel")
@@ -457,10 +460,10 @@ class customvoicechatcontrolmenu(discord.ui.View):
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
 
         if member.id == ownerid or member.id in modids:
-            if status == 2: #check if channel is alr unlocked or not
+            if status == 2: #check if channel is hidden or not
                 status = 1
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
-                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=newownerid)
+                blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} unhided the channel.")
@@ -599,6 +602,10 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+        
+        channelmembersid = []
+        for channelmember in channel.members:
+            channelmembersid.append(channelmember.id)
 
         if user.id == ownerid:
             embed = discord.Embed(title="Error", description="You are alreading owning this channel")
@@ -608,7 +615,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
         else:
             existing_mod=False
             for modid in modids:
-                if modid in channel.members.id:
+                if modid in channelmembersid:
                     embed = discord.Embed(title="Error", description="A mod assigned by the owner is in the channel.")
                     existing_mod=True
                     break
@@ -748,7 +755,7 @@ class PermitSelectMenu(discord.ui.UserSelect):
 class UnPermitSelect(discord.ui.View):
     def __init__(self):
         super().__init__()
-        self.add_item(PermitSelectMenu())
+        self.add_item(UnPermitSelectMenu())
 
 class UnPermitSelectMenu(discord.ui.UserSelect):
     def __init__(self):
@@ -825,7 +832,7 @@ class BlockSelectMenu(discord.ui.UserSelect):
             await member.move_to(None, reason="Owner blocked this person")
         
         else:
-            await add_blocked_person(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=member.id)
+            await add_blocked_person(bot=bot, guildid=guild.id, ownerid=user.id, memberid=member.id)
             embed = discord.Embed(title="Success", description=f"You blocked {member.mention}.")
         
         
@@ -851,7 +858,7 @@ class UnBlockSelectMenu(discord.ui.UserSelect):
 
         if member.id in blocked_people:
             if user.id == ownerid:
-                await channel.set_permissions(target=member, connect=True)
+                await channel.set_permissions(target=member, overwrite=None)
 
             await remove_blocked_person(bot=bot, guildid=guild.id, ownerid=user.id, memberid=member.id)
             embed = discord.Embed(title="Success", description=f"You unblocked {member.mention}.")
@@ -929,17 +936,18 @@ class KickSelectMenu(discord.ui.UserSelect):
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
+        current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
         if user.id == ownerid or ownerid in modids:
             if member.id == ownerid:
                 embed = discord.Embed(title="Error", description=f"You cant kick {member.mention}, because he is the owner of the channel.")
             elif member.id in modids:
                 if user.id == ownerid:
+                    await overwrite_perms_after_kick(bot=bot, channel=channel, member=member, current_permitted_memberids=current_permitted_memberids)
                     embed = discord.Embed(title="Success", description=f"{user.mention} kicked {member.mention}.")
-                    await member.move_to(None, reason="Owner or mods kicked this person.")
                 else:
                     embed = discord.Embed(title="Error", description=f"You cant kick the mod {member.mention} as a mod.")
             elif member.voice.channel.id == channel.id:
-                await member.move_to(None, reason="Owner or mods kicked this person.")
+                await overwrite_perms_after_kick(bot=bot, channel=channel, member=member, current_permitted_memberids=current_permitted_memberids)
                 embed = discord.Embed(title="Success", description=f"{user.mention} kicked {member.mention}.")
             else:
                 embed = discord.Embed(title="Error", description=f"You cant kick {member.mention}, because he isnt in your channel.")
@@ -947,6 +955,13 @@ class KickSelectMenu(discord.ui.UserSelect):
             embed = discord.Embed(title="Error", description=f"You cant kick {member.mention}, because you dont own this channel and arent a mod.")
         
         await interaction.response.send_message(embed=embed)
+
+async def overwrite_perms_after_kick(bot, channel, member, current_permitted_memberids):
+    await member.move_to(None, reason="Owner or mods kicked this person.")
+    if member.id in current_permitted_memberids:
+        pass
+    else:
+        await channel.set_permissions(member, overwrite=None)
 
 class SetPasswordModal(discord.ui.Modal, title="Enter the new password"):
     password = discord.ui.TextInput(label="Enter the channel's new password", placeholder="Enter the channel's new password", required=False, style=discord.TextStyle.short, max_length=16)

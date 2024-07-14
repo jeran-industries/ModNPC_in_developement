@@ -12,7 +12,7 @@ class helpbuttons(discord.ui.View):
 
     @discord.ui.button(label="Membercommands", custom_id="Membercommands")
     async def membercommands(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_message(embeds=[await levelingsystemmemberhelp(), await reactionrolesmemberhelp(), await dicesmemberhelp()])
+        await interaction.response.send_message(embeds=[await levelingsystemmemberhelp(), await reactionrolesmemberhelp(), await dicesmemberhelp(), await customvoicechatmemberhelp()])
 
     @discord.ui.button(label="Staffcommands", custom_id="Staffcommands")
     async def staffcommands(self, interaction: discord.Interaction, button: discord.ui.button):
@@ -34,6 +34,11 @@ async def reactionrolesmemberhelp():
 async def dicesmemberhelp():
     embed = discord.Embed(title="Dices")
     embed.add_field(name="`/dices`", value="After entering this command you can decide how much dices you want to throw and how much sides you want to throw.")
+    return(embed)
+
+async def customvoicechatmemberhelp():
+    embed = discord.Embed(title="Customvoicechat")
+    embed.add_field(name="`/cvc_join_request`", value="By entering this command you can request to join a member in a custom voicechat thats locked.")
     return(embed)
 
 #Staffhelp:

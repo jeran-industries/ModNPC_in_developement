@@ -300,6 +300,15 @@ async def remove_blocked_person(bot, guildid, ownerid, memberid):
 #async def change_xp(bot, guildid, memberid, xptoset):
 #    pass
 
+async def get_xp_voicetime_messagessent(bot, guildid, memberid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
+        datarow = await datacursor.fetchone()
+        if datarow is None:
+            return(None, None, None)
+        else:
+            return(datarow["xp"], datarow["voicetime"], datarow["messagessent"])
+
 async def change_xp_by(bot, guildid, memberid, xptomodify, xptoset = None):
     if xptoset is not None:
         newxp = xptoset
@@ -385,8 +394,7 @@ async def get_levelrole(bot, roleid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM levelroles WHERE roleid = ?", (roleid))
         datarow = await datacursor.fetchone()
-        roleid = datarow["roleid"]
-    if roleid is None:
+    if datarow is None:
         return(False)
     else:
         return(True)
@@ -394,9 +402,13 @@ async def get_levelrole(bot, roleid):
 async def get_all_levelroleids(bot, guildid):
     #levelroleids = cursor.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (interaction.guild.id, )).fetchall()
     async with bot.pool.acquire() as connection:
-        datacursor = await connection.execute("SELECT roleid FROM levelroles WHERE guildid = ?", (guildid))
+        datacursor = await connection.execute("SELECT * FROM levelroles WHERE guildid = ?", (guildid))
         datarows = await datacursor.fetchall()
-        return(datarows)
+        data = []
+        for datarow in datarows:
+            print(datarow["roleid"])
+            data.append(datarow["roleid"])
+        return(data)
 
 async def check4levelroles(bot, guildid):
     async with bot.pool.acquire() as connection:
@@ -410,7 +422,7 @@ async def check4levelroles(bot, guildid):
 async def create_levelrole(bot, guildid, roleid, level, keeprole):
     #cursor.execute(f"INSERT INTO levelroles VALUES ({interaction.guild.id}, {self.role[0].id}, {self.level}, {self.keeprole})") #write into the table the data
     async with bot.pool.acquire() as connection:
-        await connection.execute("INSERT INTO levelroles VALUES (?, ?, ?, ?)", (guildid, roleid, level, keeprole))
+        await connection.execute("INSERT INTO levelroles VALUES (?, ?, ?, ?)", (guildid, roleid, int(level), keeprole))
         await connection.commit()
 
 async def delete_levelrole(bot, roleid):

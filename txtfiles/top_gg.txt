@@ -6,12 +6,9 @@ ModNPC features:
 ->levelroles
 -Selfroles:
 ->Roles that can be added to the profile by reacting to the message
--Polls(not stable):
-->Up to 9 options
-->custom votecounts
 -Autoroles:
 ->by joining a server the bot gives to the member who joined roles.
-->ModNPC can detect between humans and bots+
+->ModNPC can detect between humans and bots
 -Logging:
 ->if a member joins
 ->if a member leaves
@@ -22,6 +19,9 @@ ModNPC features:
 ->if a member joins a voicechat
 ->if a member changes a voicechat
 ->if a member leaves a voicechat
+->and more
+-Custom voicechats
+->Have full control of your voicechat
 
 Plans for ModNPC:
 -logs

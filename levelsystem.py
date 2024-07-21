@@ -78,6 +78,9 @@ async def new_minute_in_vc(bot):
                     else:
                         await new_member(member, bot)
 
+#async def check4voiceactivity(member):
+#    if 1 == os.random
+
 async def rankcommand(interaction, bot, mentionedmember): #command to check level/status
     #v2:
     #guild_id = interaction.guild.id
@@ -253,7 +256,7 @@ async def addxp2user(interaction, bot, xptoadd, mentionedmember):
             member = mentionedmember
         xp = await change_xp_by(bot=bot, guildid=interaction.guild.id, memberid=member.id, xptomodify=xptoadd)
 
-        await new_level_ping(bot, member.id, member.guild.id, xp, xp + xptoadd)
+        await new_level_ping(bot, member.id, member.guild.id, xp-xptoadd, xp)
         
         #v2:
         #filename = "./database/database.db"
@@ -274,7 +277,7 @@ async def addxp2user(interaction, bot, xptoadd, mentionedmember):
         #with open(file_name, 'w', encoding = 'utf-8') as f:
         #    json.dump(data, f, indent = 1)
         #    f.close()
-        embed = discord.Embed(title=f'Success', description=f"You have added <@{member.id}> {xptoadd} xp and this member now has {xp + int(xptoadd)} xp.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"You have added <@{member.id}> {xptoadd} xp and this member now has {xp} xp.", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)
     else:
         embed = discord.Embed(title=f'Error', description=f"You don't have the permissions to give anyone xp.", color=discord.Color.red())
@@ -307,7 +310,7 @@ async def removexpfromuser(interaction, bot, xptoremove, mentionedmember):
         #with open(file_name, 'w', encoding = 'utf-8') as f:
         #    json.dump(data, f, indent = 1)
         #    f.close()
-        embed = discord.Embed(title=f'Success', description=f"You have removed from <@{member.id}> {xptoremove} xp and this member now has {xp - int(xptoremove)} xp.", color=discord.Color.green())
+        embed = discord.Embed(title=f'Success', description=f"You have removed from <@{member.id}> {xptoremove} xp and this member now has {xp} xp.", color=discord.Color.green())
         await interaction.response.send_message(embed=embed)
     else:
         embed = discord.Embed(title=f'Error', description=f"You don't have the permissions to remove from anyone xp.", color=discord.Color.red())
@@ -325,8 +328,9 @@ async def claimcommand(interaction):
         guildupvote = 0
     now = datetime.now()
     time = int(round((now - datetime(1970, 1, 1)).total_seconds()))
+    print(time)
     if guildupvote <= lastupvote:
-        await update_lastupvote(bot=bot, time=time, guildid=guildid, memberid=memberid)
+        #await update_lastupvote(bot=bot, time=time, guildid=guildid, memberid=memberid)
         await change_xp_by(bot=bot, guildid=guildid, memberid=memberid, xptomodify=100)
 
     embed = discord.Embed(title="Thanks for upvoting!!!", description="Here is the link to upvote: https://discordbotlist.com/bots/modnpc/upvote")
@@ -376,7 +380,7 @@ def rankcardgenerator(bot, username, memberid, rank, xp, level, guildid):
 
         # change width of progress bar based on percentage
         progressbarfront = progressbarfront.resize((1675, 80))
-        progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.001) / 100), progressbarfront.size[1]))
+        progressbarfront = progressbarfront.resize((round(progressbarfront.size[0] * (percent+0.1) / 100), progressbarfront.size[1]))
         progressbar = Image.open("./textures/progressbarback.png").convert("RGBA")
         progressbar = progressbar.resize((1675, 80))    
         progressbar = ImageOps.expand(progressbar, border=5, fill=(255,255,255))

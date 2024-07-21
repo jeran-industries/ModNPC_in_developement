@@ -195,6 +195,10 @@ async def on_invite_create(invite):
 async def on_invite_delete(invite):
     await invitedelete(bot, invite)
 
+@bot.event
+async def on_presence_update(before, after):
+    pass
+
 @bot.tree.command()
 async def about_me(interaction: discord.Interaction):
     embed = discord.Embed(title = "Here are some interesting links:")

@@ -7,10 +7,11 @@
 #voicetime
 #time in days in unix format
 
-#daily messageactivity
+#daily chatactivity
 #guildid
 #memberid
 #messagessent
+#time in days in unix format
 
 #table: voicechannelactivity
 #channelname
@@ -27,9 +28,11 @@
 #time in unix-format
 
 #table: richpresenceactivity
-#channelname
+#app
 #guildid
 #memberid
 #messagessent
 #time in unix-format
 
+async def rpchange():
+    pass

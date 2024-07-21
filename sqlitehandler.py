@@ -367,7 +367,10 @@ async def get_lastupvote(bot, guildid, memberid):
     async with bot.pool.acquire() as connection:
         datacursor = await connection.execute("SELECT * FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, memberid))
         datarow = await datacursor.fetchone()
-        return(datarow["last_upvote"])
+        if datarow is None:
+            return(None)
+        else:
+            return(datarow["last_upvote"])
 
 async def update_lastupvote(bot, time, guildid, memberid):
     async with bot.pool.acquire() as connection:
@@ -702,6 +705,32 @@ async def create_cvcmodstable(bot):
 #permissiontable:
 async def create_permissiontable(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS permissiontable (guildid INTEGER, roleid INTEGER, memberid INTEGER, permission TEXT, status BOOL)")
+
+#stats:
+async def create_dailyvoiceactivitytable(bot):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("CREATE TABLE IF NOT EXISTS dailyvoiceactivity (guildid, memberid, voicetime, time)")
+        await connection.commit()
+
+async def create_dailychatactivitytable(bot):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("CREATE TABLE IF NOT EXISTS dailychatactivity (guildid, memberid, messagessent, time)")
+        await connection.commit()
+
+async def create_voicechannelactivitytable(bot):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("CREATE TABLE IF NOT EXISTS voicechannelactivity (guildid, memberid, messagessent, time)")
+        await connection.commit()
+
+async def create_messagechannelactivitytable(bot):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("CREATE TABLE IF NOT EXISTS messagechannelactivity (guildid, memberid, messagessent, time)")
+        await connection.commit()
+
+async def create_richpresenceactivitytable(bot):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("CREATE TABLE IF NOT EXISTS richpresenceactivity (guildid, memberid, messagessent, time)")
+        await connection.commit()
 
 #create indexes:
 async def create_unique_index_member_table(bot):

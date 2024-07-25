@@ -295,6 +295,90 @@ async def remove_blocked_person(bot, guildid, ownerid, memberid):
         await connection.execute("DELETE FROM cvcbannedpeopletable WHERE guildid = ? AND ownerid = ? AND memberid = ?", (guildid, ownerid, memberid))
         await connection.commit()
 
+#giveawaysystem:
+async def add_giveaway(bot, guildid, hostid, channelid, messageid, prize, numberofprizes, roleid, time2close):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO giveawaytable VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (guildid, channelid, hostid, messageid, prize, numberofprizes, roleid, time2close))
+        await connection.commit()
+
+async def get_giveaway(bot, messageid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM giveawaytable WHERE messageid = ?", (messageid))
+        datarow = await datacursor.fetchone()
+    if datarow is not None:
+        return(datarow["guildid"], datarow["channelid"], datarow["hostid"], datarow["messageid"], datarow["prize"], datarow["numberofprizes"], datarow["roleid"], datarow["time2close"])
+    else:
+        return(None, None, None, None, None, None, None, None, None)
+
+async def get_all_giveaways_by_time(bot, time):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM giveawaytable WHERE time2close <= ?", (time))
+        datarows = await datacursor.fetchall()
+        if datarows == []:
+            return(None, None, None)
+        guildids = []
+        channelids = []
+        messageids = []
+        for datarow in datarows:
+            guildids.append(datarow["guildid"])
+            channelids.append(datarow["channelid"])
+            messageids.append(datarow["messageid"])
+        return(guildids, channelids, messageids)
+
+async def get_all_future_giveaways_by_time(bot, time):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM giveawaytable WHERE time2close > ?", (time))
+        datarows = await datacursor.fetchall()
+        if datarows == []:
+            return(None, None)
+        guildids = []
+        messageids = []
+        timeleft = []
+        for datarow in datarows:
+            guildids.append(datarow["guildid"])
+            messageids.append(datarow["messageid"])
+            timeleft.append(datarow["time2close"]-time)
+        return(guildids, messageids)
+
+async def delete_giveaway(bot, messageid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM giveawaytable WHERE messageid = ?", (messageid))
+
+async def check_4_user_in_giveaway(bot, messageid, memberid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM giveawayparticipantstable WHERE messageid = ? AND memberid = ?", (messageid, memberid))
+        datarow = await datacursor.fetchone()
+        if datarow is None:
+            return(False)
+        else:
+            return(True)
+
+async def add_user_2_giveaway(bot, guildid, messageid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("INSERT INTO giveawayparticipantstable VALUES (?, ?, ?)", (guildid, messageid, memberid))
+        await connection.commit()
+
+async def remove_user_from_giveaway(bot, messageid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM giveawayparticipantstable WHERE messageid = ? AND memberid = ?", (messageid, memberid))
+        await connection.commit()
+
+async def delete_4_giveaway_by_userid(bot, guildid, memberid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("SELECT * FROM giveawayparticipantstable guildid = ? AND memberid = ?", (guildid, memberid))
+        await connection.commit()
+
+async def get_participants_by_giveawayid(bot, messageid):
+    async with bot.pool.acquire() as connection:
+        datacursor = await connection.execute("SELECT * FROM giveawayparticipantstable WHERE messageid = ?", (messageid))
+        datarows = await datacursor.fetchall()
+    data = []
+    for datarow in datarows:
+        data.append(datarow["memberid"])
+    return(data)
+
+
+
 #levelsystem:
 #async def change_xp(bot, guildid, memberid, xptoset):
 #    pass
@@ -660,6 +744,12 @@ async def get_permission_status(bot, permission, roleid=None, memberid=None):
 async def create_guildsetup_table(bot):
     #botupdatestatus BOOL, botupdatechannelid INTEGER)"
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS guildsetup (guildid INTEGER, levelingsystemstatus BOOL, levelingpingmessagechannel INTEGER, welcomemessagestatus BOOL, anonymousmessagecooldown INTEGER, anonymousmessagestatus BOOL, botupdatestatus BOOL, botupdatechannelid INTEGER, logchannelid INTEGER, logwebhookid INTEGER, ticketsystemstatus BOOL, ticketsystemchannelid INTEGER, ticketsystemopencategoryid INTEGER, ticketsystemclosedcategoryid INTEGER)")
+
+async def create_giveaway_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS giveawaytable (guildid INTEGER, channelid INTEGER, hostid INTEGER, messageid INTEGER, prize TEXT, numberofprizes INTEGER, roleid INTEGER, time2close INTEGER)")
+
+async def create_giveawayparticipantstable_table(bot):
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS giveawayparticipantstable (guildid INTEGER, messageid INTEGER, memberid INTEGER)")
 
 async def create_autorole_table(bot):
     await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS autorole (guildid INTEGER, roleid INTEGER, membergroup INTEGER)")

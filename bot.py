@@ -17,6 +17,7 @@ import aiohttp
 import asqlite 
 from PIL import ImageFont
 import datetime
+from typing import Literal
 
 #own modules:
 from on_startup import database_checking_and_creating, message_back_online, beta_message_back_online
@@ -35,9 +36,10 @@ from setup import setupcommand
 from presence import presenceupdate
 from checks import check4upvotebotlist
 from autoroles import add_autorole_2_user, addrole2allmembercommand, removerolefromallmembercommand
-from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable, create_permissiontable
+from sqlitehandler import asqlite_pull_data, create_guildsetup_table, create_autorole_table, create_levelroles_table, create_member_table, create_unique_index_member_table, create_ticketsystemtable, create_cvctable, create_cvcpermittedpeopletable, create_cvcmodstable, create_cvcbannedpeopletable, create_current_cvctable, create_current_cvcpermittedpeopletable, create_permissiontable, create_giveaway_table, create_giveawayparticipantstable_table, delete_4_giveaway_by_userid
 from ticketsystem import OpenTicketButton, Unclaimedticketbuttons
 from customvoicechat import cvc, customvoicechatcontrolmenu, regularcheck4emptycvc, checkifuserisallowedtojoincvc, on_guild_join_rewrite_cvc_permissions, joinreqcommand
+from giveaway import giveaway_add_command, giveaway_list_command, giveaway_buttons_view, check4closinggiveaways, get_all_giveaways_by_time
 
 #from "dateiname" import "name der funktion"
 
@@ -65,17 +67,37 @@ class MyBot(commands.Bot):
     async def setup_hook(self):
         # Load the commands extension
         print("Running setup tasks")
+        current_time=int(round((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds()))
         self.pool = await asqlite.create_pool(database="./database/database.db")
 
         self.add_view(OpenTicketButton())
         self.add_view(Unclaimedticketbuttons())
         self.add_view(customvoicechatcontrolmenu())
+        self.add_view(giveaway_buttons_view())
 
         self.font = font()
+
+        await create_guildsetup_table(bot=bot)
+        await create_autorole_table(bot=bot)
+        await create_levelroles_table(bot=bot)
+        await create_member_table(bot=bot)
+        await create_unique_index_member_table(bot=bot)
+        await create_ticketsystemtable(bot=bot)
+        await create_cvctable(bot=bot)
+        await create_cvcpermittedpeopletable(bot=bot)
+        await create_cvcmodstable(bot=bot)
+        await create_cvcbannedpeopletable(bot=bot)
+        await create_current_cvctable(bot=bot)
+        await create_current_cvcpermittedpeopletable(bot=bot)
+        await create_permissiontable(bot=bot)
+        await create_giveaway_table(bot=bot)
+        await create_giveawayparticipantstable_table(bot=bot)
+
+        one_second_loop.start()
         one_minute_loop.start()
         ten_minute_loop.start()
         print("Running setup tasks completed")
-        print(datetime.datetime.now(datetime.timezone.utc))
+        print(current_time)
 
     async def discorderrorlog(error):
         print("im trying to log")
@@ -134,9 +156,13 @@ async def on_member_join(member):
         print(error)
         #await bot.discorderrorlog(error=str(error))
 
+@tasks.loop(seconds=1)
+async def one_second_loop():
+    await check4closinggiveaways(bot=bot)
+
 @tasks.loop(minutes=1)
 async def one_minute_loop():
-    print("One minute loop is running")
+    #print("One minute loop is running")
     await new_minute_in_vc(bot)
 
 @tasks.loop(minutes=10)
@@ -174,6 +200,7 @@ async def on_voice_state_update(member, before, after):
 @bot.event
 async def on_raw_member_remove(payload):
     await memberleave(bot, payload)
+    await delete_4_giveaway_by_userid(bot=bot, guildid=payload.guild_id, memberid=user.id)
 
 #@bot.event
 #async def on_member_update(before, after):
@@ -293,6 +320,15 @@ async def cvc_join_request(interaction:discord.Interaction, member:discord.Membe
 @bot.tree.command()
 async def cvc_claim(interaction:discord.Interaction, member:discord.Member):
     await interaction.response.send_message(view=customvoicechatcontrolmenu())
+
+#Giveaways:
+@bot.tree.command(name="giveaway_create")
+async def giveaway_create(interaction:discord.Interaction, prize: str, number_of_prizes: int = 1, role: discord.Role = None, timelimit_min: int = 0, timelimit_hour:int = 0, timelimit_days: int = 0, mention: Literal["Yes", "No"] = "No", color: Literal["blue", "blurple", "gold", "green", "magenta", "orange", "pink", "purple", "random", "red", "yellow"] = None):
+    await giveaway_add_command(interaction=interaction, prize=prize, number_of_prizes=number_of_prizes, role=role, timelimit=(timelimit_min*60+timelimit_hour*3600+timelimit_days*86400), mention=mention, color=color)
+
+@bot.tree.command(name="giveaway_list")
+async def giveaway_create(interaction:discord.Interaction):
+    await giveaway_list_command(interaction=interaction)
 
 #Selfroles:
 #v1: selfroles with reactions
@@ -458,7 +494,7 @@ async def on_guild_join(guild):
     except:
         pass
     for member in guild.members:
-        new_member(member)
+        new_member(bot=bot, member=member)
 
 @bot.event
 async def on_guild_remove(guild):
@@ -478,19 +514,6 @@ async def on_ready():
     print(f'{bot.user} is connected to the servers with these members:\n')
     guildcounter = 0
     membercounter = 0
-    await create_guildsetup_table(bot=bot)
-    await create_autorole_table(bot=bot)
-    await create_levelroles_table(bot=bot)
-    await create_member_table(bot=bot)
-    await create_unique_index_member_table(bot=bot)
-    await create_ticketsystemtable(bot=bot)
-    await create_cvctable(bot=bot)
-    await create_cvcpermittedpeopletable(bot=bot)
-    await create_cvcmodstable(bot=bot)
-    await create_cvcbannedpeopletable(bot=bot)
-    await create_current_cvctable(bot=bot)
-    await create_current_cvcpermittedpeopletable(bot=bot)
-    await create_permissiontable(bot=bot)
     #await create_
     for guild in bot.guilds:
         print(f'{guild.name}(id: {guild.id})')

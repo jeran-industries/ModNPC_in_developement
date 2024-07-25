@@ -2,7 +2,7 @@ import sqlite3
 import discord
 import requests
 import json
-from datetime import datetime
+import datetime
 
 from sqlitehandler import update_lastupvote, change_xp_by, get_lastupvote
 
@@ -61,7 +61,7 @@ async def check4upvotebotlist(bot, botlisttoken):
             timelastupvote = await get_lastupvote(bot=bot, guildid=0, memberid=memberid)
 
             if timelastupvote is not None:
-                time = int(round((datetime.now() - datetime(1970, 1, 1)).total_seconds()))
+                time = int(round((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds()))
                 if time-timelastupvote >= 43200:
 
                     await update_lastupvote(bot=bot, time=time, guildid=0, memberid=memberid)

@@ -479,7 +479,7 @@ async def on_raw_reaction_remove(payload): #reactionremoved trigger
 @bot.event
 async def on_guild_join(guild):
     await database_checking_and_creating(bot, guild.id)
-    channel = bot.get_channel(MEMBERLOGCHANNELID)
+    logchannel = bot.get_channel(MEMBERLOGCHANNELID)
     for channel in guild.channels:
         try:
             inviteurl = await channel.create_invite()
@@ -490,7 +490,7 @@ async def on_guild_join(guild):
     embed.add_field(name="Guildowner", value=guild.owner.name)
     embed.add_field(name="Membercount", value=guild.member_count)
     try:
-        await channel.send(embed=embed)
+        await logchannel.send(embed=embed)
     except:
         pass
     for member in guild.members:

@@ -24,7 +24,7 @@ import datetime
 import random
 
 #own modules
-from sqlitehandler import add_giveaway, check_4_user_in_giveaway, add_user_2_giveaway, remove_user_from_giveaway, get_all_giveaways_by_time, delete_giveaway, get_participants_by_giveawayid, get_giveaway
+from sqlitehandler import add_giveaway, check_4_user_in_giveaway, add_user_2_giveaway, remove_user_from_giveaway, get_all_giveaways_by_time, delete_giveaway, get_participants_by_giveawayid, get_giveaway, remove_users_from_giveaway
 
 async def check4closinggiveaways(bot):
     currenttime=int(round((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds()))
@@ -229,12 +229,17 @@ class giveaway_buttons_view(discord.ui.View):
 
     @discord.ui.button(label="Close", custom_id="closegiveawaypreview")
     async def closegiveawayscript(self, interaction: discord.Interaction, button: discord.ui.button, row=0):
+        bot = interaction.client
+        guild = interaction.guild
+        channel = interaction.channel
         giveawaymessage = interaction.message
-        giveawaymessageembed = giveawaymessage.embeds[0]
-        giveawaymessageembed.set_field_at(index=1, name = "Closed", value = giveawaymessageembed.fields[1].value, inline = True)
-        await giveawaymessage.edit(embed=giveawaymessageembed, view=None)
-        await selectwinner_giveaway(bot=bot, guild=guild, channel=channel, messageid=giveawaymessageid)
+        await selectwinner_giveaway(bot=bot, guild=guild, channel=channel, messageid=giveawaymessage.id)
+        await remove_users_from_giveaway(bot=bot, messageid=giveawaymessage.id)
+        messageembed = giveawaymessage.embeds[0]
+        messageembed.set_field_at(index = 1, name="Closed:", value=f"<t:{int(round((datetime.datetime.now(datetime.timezone.utc) - datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds()))}:R>")
+        await giveawaymessage.edit(embed=messageembed, view=None)
         await delete_giveaway(bot=bot, messageid=giveawaymessage.id)
+        await interaction.response.send_message(content=".", delete_after=0.01, ephemeral=True)
 
     @discord.ui.button(label="Extend Giveaway", custom_id="extendgiveawaypreview")
     async def extendgiveawayscript(self, interaction: discord.Interaction, button: discord.ui.button, row=0):

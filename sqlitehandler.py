@@ -363,6 +363,11 @@ async def remove_user_from_giveaway(bot, messageid, memberid):
         await connection.execute("DELETE FROM giveawayparticipantstable WHERE messageid = ? AND memberid = ?", (messageid, memberid))
         await connection.commit()
 
+async def remove_users_from_giveaway(bot, messageid):
+    async with bot.pool.acquire() as connection:
+        await connection.execute("DELETE FROM giveawayparticipantstable WHERE messageid = ?", (messageid))
+        await connection.commit()
+
 async def delete_4_giveaway_by_userid(bot, guildid, memberid):
     async with bot.pool.acquire() as connection:
         await connection.execute("SELECT * FROM giveawayparticipantstable guildid = ? AND memberid = ?", (guildid, memberid))

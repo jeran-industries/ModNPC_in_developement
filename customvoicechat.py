@@ -65,7 +65,7 @@ async def check4emptycvc(bot, member, channel):
 async def on_guild_join_rewrite_cvc_permissions(bot, member):
     guild = member.guild
     ownerids = await get_cvc_where_member_blocked(bot=bot, guildid=guild.id, memberid=member.id)
-    if ownerid != []:
+    if ownerids != []:
         for ownerid in ownerids:
             channelid, name, status, vclimit, password = await get_current_cvc_by_ownerid(bot=bot, guildid=guild.id, ownerid=ownerid)
             channel = guild.get_channel(channelid)

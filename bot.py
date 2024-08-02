@@ -121,8 +121,6 @@ sys.path.append('.')
 @bot.event
 async def on_member_join(member):
     channel = bot.get_channel(MEMBERLOGCHANNELID)
-    print(MEMBERLOGCHANNELID)
-    print(channel)
     embed = discord.Embed(title="New member!", description=f"{member.mention} just joined to {member.guild.name}")
     try:
         await channel.send(embed=embed)
@@ -200,7 +198,7 @@ async def on_voice_state_update(member, before, after):
 @bot.event
 async def on_raw_member_remove(payload):
     await memberleave(bot, payload)
-    await delete_4_giveaway_by_userid(bot=bot, guildid=payload.guild_id, memberid=user.id)
+    await delete_4_giveaway_by_userid(bot=bot, guildid=payload.guild_id, memberid=payload.user.id)
 
 #@bot.event
 #async def on_member_update(before, after):
@@ -499,7 +497,7 @@ async def on_guild_join(guild):
 @bot.event
 async def on_guild_remove(guild):
     channel = bot.get_channel(MEMBERLOGCHANNELID)
-    embed = discord.Embed(title="Guild left!", description=f"{member.guild.name} just left the system.")
+    embed = discord.Embed(title="Guild left!", description=f"{guild.name} just left the system.")
     embed.add_field(name="Guildowner", value=guild.owner.name)
     embed.add_field(name="Membercount", value=guild.member_count)
     await channel.send(embed=embed)

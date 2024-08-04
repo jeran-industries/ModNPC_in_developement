@@ -487,12 +487,12 @@ async def on_guild_join(guild):
     embed = discord.Embed(title="New guild!", description=f"{guild.name} just joined the system: {inviteurl}")
     embed.add_field(name="Guildowner", value=guild.owner.name)
     embed.add_field(name="Membercount", value=guild.member_count)
+    for member in guild.members:
+        new_member(bot=bot, member=member)
     try:
         await logchannel.send(embed=embed)
     except:
         pass
-    for member in guild.members:
-        new_member(bot=bot, member=member)
 
 @bot.event
 async def on_guild_remove(guild):

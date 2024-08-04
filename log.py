@@ -375,5 +375,8 @@ async def getlogwebhook(bot, guildid):
         else:
             return(None) #not able to create webhook
     else:
-        webhook = await bot.fetch_webhook(webhookid)
+        try:
+            webhook = await bot.fetch_webhook(webhookid)
+        except:
+            webhook = None
         return(webhook)

@@ -178,13 +178,11 @@ async def new_level_ping(bot, memberid, guildid, xpbefore, xpafter): #called eve
         guild = bot.get_guild(guildid) #getting guild
         member = guild.get_member(memberid) #getting member
         embed = discord.Embed(title=f'Congratulations!!!', description=f'{member.mention} reached level {newlevel}.', color=discord.Color.green())
-        numbers = list(range(oldlevel, newlevel+1))
-        for level in numbers:
-            roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="roleid")
-            if roleid is not None:
-                role = guild.get_role(roleid)
-                await member.add_roles(role)
-                embed.add_field(name="You achieved a new role:", value=role.name)
+        roleid = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {newlevel}", data_to_return="roleid")
+        if roleid is not None:
+            role = guild.get_role(roleid)
+            await member.add_roles(role)
+            embed.add_field(name="You achieved a new role:", value=role.mention)
         oldlevels = list(range(0, oldlevel))
         for level in oldlevels:
             status = await asqlite_pull_data(bot = bot, statement=f"SELECT * FROM levelroles WHERE guildid = {guildid} AND level = {level}", data_to_return="keeprole")

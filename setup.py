@@ -33,6 +33,7 @@ class SelectStartMenu(discord.ui.Select):
             discord.SelectOption(label='Anonymous Messages', description='Here you can activate, deactivate, set the cooldown of anonymous messages and limit them to channel.'),
             #discord.SelectOption(label='Applications', description='Here you can setup the applications for your server staff and other roles.'),
             discord.SelectOption(label='Autoroles', description='Here you can add and remove autoroles.'),
+            discord.SelectOption(label='Birthday', description='You can setup birthdays like this.'),
             discord.SelectOption(label='Botupdates', description='You have to set a channel where the botupdates will be sent Otherwise the bot wont work.'),
             discord.SelectOption(label='Custom VCs', description='You can activate and deactivate custom voicechats.'),
             discord.SelectOption(label='Levelsystem', description='You can (de)activate the levelsystem, set the levelpingchannel, add and remove xp.'),
@@ -52,6 +53,8 @@ class SelectStartMenu(discord.ui.Select):
             await applicationssetup(interaction)
         elif result == "Autoroles":
             await autorolessetup(interaction, bot)
+        elif result == "Birthday":
+            await botupdatessetup(interaction)
         elif result == "Botupdates":
             await botupdatessetup(interaction)
         elif result == "Custom VCs":
@@ -259,6 +262,23 @@ class SelectAnonymousMessage(discord.ui.View):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.send_message(content=f"Sucessfully given you {self.values}")
+
+#Birthday:
+
+async def birthdaysetup(interaction):
+    pass
+
+class Birthdaybuttons(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Set channel", custom_id="setbirthdaychannel")
+    async def setbirthdaychannel(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
+
+    @discord.ui.button(label="Set role", custom_id="setbirthdayrole")
+    async def setbirthdayrole(self, interaction: discord.Interaction, button: discord.ui.button):
+        await interaction.response.send_message(f"Hey u clicked me... shame on u")
 
 #Botupdates:
 
@@ -768,17 +788,36 @@ class WelcomemessageModal(discord.ui.Modal, title="What is the welcomemessage?")
         self.channel = channel
         super().__init__()
     
-    headerwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.paragraph, max_length=256)
-    contentwelcomemessage = discord.ui.TextInput(label=f"Enter the content of the welcomemessage", style=discord.TextStyle.long, required=False, max_length=4096)
+    headerwelcomemessage = discord.ui.TextInput(label=f"Enter the header of the welcomemessage", style=discord.TextStyle.paragraph, required=False, max_length=256)
+    contentwelcomemessage = discord.ui.TextInput(label=f"Enter the content of the welcomemessage", style=discord.TextStyle.long, required=False, max_length=4000)
+    thumbnailtype = discord.ui.TextInput(label="Enter the thumbnailtype or keep it void", placeholder = "Enter nothing, `userpfp` or `servericon`", style=discord.TextStyle.paragraph, required=False, min_length=7, max_length=10)
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(view=WelcomemessageConfirmation(channel=self.channel, headerwelcomemessage = self.headerwelcomemessage, contentwelcomemessage = self.contentwelcomemessage), ephemeral=True)
+        if self.headerwelcomemessage is None and self.contentwelcomemessage is None:
+            embed = discord.Embed(title="You have to enter a header or a content of a welcomemessage.")
+            await interaction.response.send_message(embed=embed, view=WelcomemessageRetry(), ephemeral=True)
+        else:
+            if self.thumbnailtype.value == "userpfp" or "servericon" or None:
+                await interaction.response.send_message(view=WelcomemessageConfirmation(channel=self.channel, headerwelcomemessage = self.headerwelcomemessage, contentwelcomemessage = self.contentwelcomemessage, thumbnailtype = self.thumbnailtype), ephemeral=True)
+            else:
+                embed = discord.Embed(title="You set an invalid thumbnailtype.")
+                await interaction.response.send_message(embed=embed, view=WelcomemessageRetry(), ephemeral=True)
+
+class WelcomemessageRetry(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Retry")
+    async def retrysetupwelcomemessage(self, interaction: discord.Interaction, button: discord.ui.button):
+        embed = discord.Embed(title=f"Here you can set a welcomemessage up.")
+        await interaction.response.send_message(embed=embed, view=WelcomemessageChannelSelect(), ephemeral = True)
 
 class WelcomemessageConfirmation(discord.ui.View):
-    def __init__(self, channel, headerwelcomemessage, contentwelcomemessage):
+    def __init__(self, channel, headerwelcomemessage, contentwelcomemessage, thumbnailtype):
         self.channel = channel
         self.headerwelcomemessage = headerwelcomemessage
         self.contentwelcomemessage = contentwelcomemessage
+        self.thumbnailtype=thumbnailtype
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Create Welcomemessage", custom_id="createwelcomemessage")
@@ -786,10 +825,11 @@ class WelcomemessageConfirmation(discord.ui.View):
         channelid = int(self.channel[0].id)
         headerwelcomemessage = self.headerwelcomemessage.value
         contentwelcomemessage = self.contentwelcomemessage.value
+        thumbnailtype = self.thumbnailtype.value
         bot = interaction.client
         guild = interaction.guild
         await delete_welcomemessage(bot=bot, guildid=guild.id)
-        await insert_into_welcomemessage(bot=interaction.client, guildid=interaction.guild.id, channelid=channelid, headerwelcomemessage=headerwelcomemessage, contentwelcomemessage=contentwelcomemessage)
+        await insert_into_welcomemessage(bot=interaction.client, guildid=interaction.guild.id, channelid=channelid, headerwelcomemessage=headerwelcomemessage, contentwelcomemessage=contentwelcomemessage, thumbnailtype=thumbnailtype)
         successembed = discord.Embed(title="SUCCESS", description=f"Success the welcomemessage was created for <#{channelid}>.")
         await interaction.response.send_message(embed=successembed, ephemeral=True)
 

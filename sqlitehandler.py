@@ -610,13 +610,13 @@ async def get_claimerid_ticket(bot, ticketid):
 
 
 #welcomemessages:
-async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage):
+async def insert_into_welcomemessage(bot, guildid, channelid, headerwelcomemessage, contentwelcomemessage, thumbnailtype):
     #"INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?)", (interaction.guild.id, channelid, headerwelcomemessage, contentwelcomemessage)
     #print(headerwelcomemessage)
     #print(contentwelcomemessage)
     #conn.execute("INSERT INTO Employees (ID,NAME,AGE,ADDRESS,SALARY) \  VALUES (1, 'Ajeet', 27, 'Delhi', 20000.00 )");  
     async with bot.pool.acquire() as connection:
-        await connection.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?, ?)", (guildid, channelid, headerwelcomemessage, contentwelcomemessage, True))
+        await connection.execute("INSERT INTO welcomemessagetable VALUES (?, ?, ?, ?, ?, ?)", (guildid, channelid, headerwelcomemessage, contentwelcomemessage, True, thumbnailtype))
         await connection.commit()
 
 async def check_4_welcomemessage(bot, guildid):
@@ -770,7 +770,7 @@ async def create_ticketsystemtable(bot):
 
     #cursor.execute("CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT)")
 async def create_welcomemessagetable(bot):
-    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT, mentionwelcomemessage BOOL)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
+    await asqlite_create_table(bot=bot, statement="CREATE TABLE IF NOT EXISTS welcomemessagetable (guildid INTEGER, channelid INTEGER, header TEXT, content TEXT, mentionwelcomemessage BOOL, thumbnailtype TEXT)") #ticketid = messageid ticketstatus = 0(unclaimed) 1(claimed) 2(closed) 3(reopened&unclaimed) 4(reopened&claimed)
 
 #cvc
 #table cvctable: guildid, ownerid, name, status (locked/unlocked/hided), limit, password
@@ -840,6 +840,7 @@ async def add_columns(bot):
     await create_ticketsystemopencategoryid_column(bot)
     await create_ticketsystemclosedcategoryid_column(bot)
     await create_mentionwelcomemessage_column(bot)
+    await create_thumbnailtype_column(bot=bot)
     await create_cvcstatus_column(bot)
     await create_jointocreatechannel_column(bot)
 
@@ -863,6 +864,9 @@ async def create_ticketsystemclosedcategoryid_column(bot):
 
 async def create_mentionwelcomemessage_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="welcomemessagetable", columnname="mentionwelcomemessage", columntype="BOOL")
+
+async def create_thumbnailtype_column(bot):
+    await asqlite_try_2_add_column(bot=bot, table="welcomemessagetable", columnname="thumbnailtype", columntype="TEXT")
 
 async def create_cvcstatus_column(bot):
     await asqlite_try_2_add_column(bot=bot, table="guildsetup", columnname="cvcstatus", columntype="BOOL")

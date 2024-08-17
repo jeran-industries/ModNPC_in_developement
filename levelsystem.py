@@ -66,7 +66,7 @@ async def new_minute_in_vc(bot):
                 if member.bot == False:
                     registeredmember = await asqlite_pull_data(bot=bot, statement=f"SELECT * FROM membertable WHERE guildid = {guildids[1]} AND memberid = {member.id}", data_to_return="memberid")
                     if registeredmember is not None:
-                        xptomodify=5
+                        xptomodify=2
                     #"SELECT memberid FROM membertable WHERE guildid = ? AND memberid = ?", (guildid, member.id)
                         for guildid in guildids:
                             await update_voicetime(bot=bot, guildid=guildid, memberid=member.id)
@@ -127,6 +127,7 @@ async def rankcommand(interaction, bot, mentionedmember): #command to check leve
     # Send the embed
     #member.avatar.save("D:/Coding/Discordbot/ModNPC_in_developement/testfiles/rankcard/pfptest.png")
     await member.display_avatar.save(fp=f"./database/rankcards/profilepictures/{guildid}/{member.id}.png")
+    print(member.guild_avatar)
     #print(f"\n{file}\n")
     bot = interaction.client
     rankcardgenerator(bot, member.display_name, member.id, rank, xp, level, guildid)

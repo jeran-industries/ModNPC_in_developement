@@ -314,6 +314,7 @@ async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberid
                 overwrite = {
                     permittedmember: discord.PermissionOverwrite(
                         connect=True,
+                        send_messages=True,
                     )
                 }
             overwrites.update(overwrite)
@@ -334,6 +335,7 @@ async def overwriteperms(bot, guild, status, permittedmemberids, blockedmemberid
                     permittedmember: discord.PermissionOverwrite(
                         connect=True,
                         view_channel=True,
+                        send_messages=True,
                     )
                 }
             overwrites.update(overwrite)
@@ -356,21 +358,25 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="✍️", custom_id="renamecustomvoicechat", row=0)
     async def rename(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_modal(RenameModal())
+        if await checkifuserincvc(interaction=interaction) is True:
+            await interaction.response.send_modal(RenameModal())
     
     @discord.ui.button(label="👥", custom_id="limitcustomvoicechat", row=0)
     async def limit(self, interaction: discord.Interaction, button: discord.ui.button):
-        await interaction.response.send_modal(LimitModal())
+        if await checkifuserincvc(interaction=interaction) is True:
+            await interaction.response.send_modal(LimitModal())
 
     @discord.ui.button(label="🔒", custom_id="lockcustomvoicechat", row=0)
     async def lock(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
-        print(status)
+
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
         channelmembers = interaction.channel.members
@@ -379,14 +385,15 @@ class customvoicechatcontrolmenu(discord.ui.View):
             if status != 1: #check if channel is alr locked or not
                 status = 1
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
+                current_permitted_memberids.append(ownerid)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
-                for channelmember in channelmembers:
-                    await channel.set_permissions(target=channelmember, connect=True)
+                #for channelmember in channelmembers:
+                #    await channel.set_permissions(target=channelmember, connect=True, send_messages=True)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
                 embed = discord.Embed(title="Success", description=f"{member.mention} locked the channel.")
             else: #channel is alr locked
-                embed = discord.Embed(title="Error", description=f"The channel is already unlocked")
+                embed = discord.Embed(title="Error", description=f"The channel is already locked")
         else:
             embed = discord.Embed(title="Error", description=f"You dont have the rights to lock this channel")
         
@@ -394,13 +401,15 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="🔓", custom_id="unlockcustomvoicechat", row=0)
     async def unlock(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
-        print(status)
+
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
 
@@ -421,13 +430,16 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="🤫", custom_id="hidecustomvoicechat", row=1)
     async def hide(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
-        channelmembers = interaction.channel.members
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
 
@@ -435,6 +447,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
             if status != 2: #check if channel is alr locked or not
                 status = 2
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
+                current_permitted_memberids.append(ownerid)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
                 for channelmember in channelmembers:
                     await channel.set_permissions(target=channelmember, connect=True, view_channel=True)
@@ -450,10 +463,13 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="🫨", custom_id="unhidecustomvoicechat", row=1)
     async def unhide(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         #unlocked: 0, locked&unhidden: 1, locked&hidden: 2
@@ -463,6 +479,7 @@ class customvoicechatcontrolmenu(discord.ui.View):
             if status == 2: #check if channel is hidden or not
                 status = 1
                 current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
+                current_permitted_memberids.append(ownerid)
                 blockedmemberids = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
                 await change_customvcstatus(bot=bot, status=status, channelid=channel.id)
                 await channel.edit(overwrites=await overwriteperms(bot=bot, guild=guild, status=status, permittedmemberids=current_permitted_memberids, blockedmemberids=blockedmemberids))
@@ -476,26 +493,38 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="👤➕", custom_id="permitcustomvoicechat", row=1)
     async def permit(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=PermitSelect(), ephemeral = True)
 
     @discord.ui.button(label="👤➖", custom_id="unpermitcustomvoicechat", row=1)
     async def unpermit(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=UnPermitSelect(), ephemeral = True)
 
     @discord.ui.button(label="⛔➕", custom_id="blockcustomvoicechat", row=2)
     async def block(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=BlockSelect(), ephemeral = True)
 
     @discord.ui.button(label="⛔➖", custom_id="unblockcustomvoicechat", row=2)
     async def unblock(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=UnBlockSelect(), ephemeral = True)
 
     @discord.ui.button(label="👮➕", custom_id="addmodcustomvoicechat", row=2)
     async def addmod(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=AddModSelect(), ephemeral = True)
 
     @discord.ui.button(label="👮➖", custom_id="removemodcustomvoicechat", row=2)
     async def removemod(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         bot=interaction.client
         guild=interaction.guild
 
@@ -527,10 +556,14 @@ class customvoicechatcontrolmenu(discord.ui.View):
     
     @discord.ui.button(label="🚪", custom_id="kickcustomvoicechat", row=3)
     async def kick(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         await interaction.response.send_message(view=KickSelect(), ephemeral = True)
 
     @discord.ui.button(label=" 💡 ", custom_id="listmodscustomvoicechat", row=3)
     async def cvcinfo(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         bot=interaction.client
         guild=interaction.guild
         channel=interaction.channel
@@ -568,10 +601,13 @@ class customvoicechatcontrolmenu(discord.ui.View):
     
     @discord.ui.button(label="💾", custom_id="savesessioncustomvoicechat", row=3)
     async def savesession(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         if member.id == ownerid:
@@ -595,10 +631,13 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label="🛄", custom_id="claimcustomvoicechat", row=3)
     async def claim(self, interaction: discord.Interaction, button: discord.ui.button):
-        bot = interaction.client
-        channel = interaction.channel
-        user = interaction.user
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
@@ -636,10 +675,12 @@ class customvoicechatcontrolmenu(discord.ui.View):
 
     @discord.ui.button(label=" 🔑 ", custom_id="setpasswordcustomvoicechat", row=4)
     async def setpassword(self, interaction: discord.Interaction, button: discord.ui.button):
+        if await checkifuserincvc(interaction=interaction) is False:
+            return()
+
         user = interaction.user
         channel = user.voice.channel
         bot = interaction.client
-
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
 
         if ownerid == user.id:
@@ -647,17 +688,21 @@ class customvoicechatcontrolmenu(discord.ui.View):
         
         else:
             embed = discord.Embed(title="Error", description="You aren't the owner of this channel.")
+            await interaction.response.send_modal(embed=embed)
+
 
 class RenameModal(discord.ui.Modal, title="How should your custom voicechat be called"):
     name = discord.ui.TextInput(label="Enter the channel's new name", placeholder="Enter the channel's new name", style=discord.TextStyle.short)
 
     async def on_submit(self, interaction: discord.Interaction):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         name = str(self.name)
         successembed = discord.Embed(title="Success", description=f"You renamed the channel to `{name}`.")
         try:
@@ -682,10 +727,11 @@ class LimitModal(discord.ui.Modal, title="How many people can join the channel?"
     limit = discord.ui.TextInput(label="Limit the channel", placeholder="Enter a number between 1 and 99 or something else", style=discord.TextStyle.short)
 
     async def on_submit(self, interaction: discord.Interaction):
-        bot = interaction.client
-        channel = interaction.channel
-        member = interaction.user
         guild = interaction.guild
+        member = interaction.user
+        channel = member.voice.channel
+        channelmembers = channel.members
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
 
@@ -724,13 +770,14 @@ class PermitSelectMenu(discord.ui.UserSelect):
         super().__init__(placeholder="Choose the member to permit")
 
     async def callback(self, interaction: discord.Interaction):
-        bot = interaction.client
         guild = interaction.guild
-        member = self.values[0]
         user = interaction.user
-        channel = interaction.channel
+        channel = user.voice.channel
+        member = self.values[0]
+        bot = interaction.client
 
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
         currentpermittedmembers = await get_current_permitted_member(bot=bot, channelid=channel.id, ownerid=ownerid)
         permittedmembers = await get_permitted_member(bot=bot, guildid=guild.id, ownerid=ownerid)
@@ -744,9 +791,9 @@ class PermitSelectMenu(discord.ui.UserSelect):
                 embed = discord.Embed(title="Success", description=f"You permitted {member.mention}.")
                 await add_current_permitted_user(bot=bot, guildid=guild.id, ownerid=ownerid, channelid=channel.id, memberid=member.id)
                 if status == 1: #locked
-                    await channel.set_permissions(target=member, connect=True)
+                    await channel.set_permissions(target=member, connect=True, send_messages=True)
                 elif status == 2:
-                    await channel.set_permissions(target=member, connect=True, view_channel=True)
+                    await channel.set_permissions(target=member, connect=True, send_messages=True, view_channel=True)
         else:
             embed = discord.Embed(title="Error", description="You aren't the owner or a mod of this channel.")
         
@@ -802,12 +849,14 @@ class BlockSelectMenu(discord.ui.UserSelect):
         super().__init__(placeholder="Choose the member to block")
 
     async def callback(self, interaction: discord.Interaction):
-        bot = interaction.client
         guild = interaction.guild
-        member = self.values[0]
-        channel = interaction.channel
         user = interaction.user
+        channel = user.voice.channel
+        member = self.values[0]
+        bot = interaction.client
+
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         currentpermittedmembers = await get_current_permitted_member(bot=bot, channelid=channel.id)
         permittedmembers = await get_permitted_member(bot=bot, guildid=guild.id, ownerid=ownerid)
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
@@ -824,12 +873,16 @@ class BlockSelectMenu(discord.ui.UserSelect):
             elif member.id in currentpermittedmembers:
                 await delete_current_permitted_user(bot=bot, channelid=channel.id, memberid=member.id)
                 embed = discord.Embed(title="Success", description=f"You kicked and blocked {member.mention}.")
-            if status == 0 or status == 1: #unlocked or locked
-                    await channel.set_permissions(target=member, connect=False)
-            elif status == 2:
-                await channel.set_permissions(target=member, connect=False, view_channel=False)
+            else:
+                embed = discord.Embed(title="Success", description=f"You kicked and blocked {member.mention}.")
 
-            await member.move_to(None, reason="Owner blocked this person")
+            if status == 0 or status == 1: #unlocked or locked
+                await channel.set_permissions(target=member, connect=False, send_messages=False)
+            elif status == 2:
+                await channel.set_permissions(target=member, connect=False, send_messages=False, view_channel=False)
+
+            if member.voice.channel.id == user.voice.channel.id:
+                await member.move_to(None, reason="Owner blocked this person")
         
         else:
             await add_blocked_person(bot=bot, guildid=guild.id, ownerid=user.id, memberid=member.id)
@@ -848,12 +901,15 @@ class UnBlockSelectMenu(discord.ui.UserSelect):
         super().__init__(placeholder="Choose the member to unblock")
 
     async def callback(self, interaction: discord.Interaction):
-        bot = interaction.client
         guild = interaction.guild
-        member = self.values[0]
-        channel = interaction.channel
         user = interaction.user
+        channel = user.voice.channel
+        member = self.values[0]
+        
+        bot = interaction.client
+
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         blocked_people = await get_blocked_member(bot=bot, guildid=guild.id, ownerid=ownerid)
 
         if member.id in blocked_people:
@@ -877,11 +933,13 @@ class AddModSelectMenu(discord.ui.UserSelect):
         super().__init__(placeholder="Choose the member to add as a mod")
 
     async def callback(self, interaction: discord.Interaction):
-        bot = interaction.client
         guild = interaction.guild
         member = interaction.user
-        channel = interaction.channel
+        channel = user.voice.channel        
+        bot = interaction.client
+
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
         mods = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
         if member.id == ownerid:
             if self.values[0].id in mods:
@@ -906,12 +964,14 @@ class RemoveModSelectMenu(discord.ui.Select):
         super().__init__(placeholder=placeholder, options=options, disabled=status)
 
     async def callback(self, interaction: discord.Interaction):
-        bot = interaction.client
         guild = interaction.guild
-        member = interaction.user
-        channel = interaction.channel
+        user = interaction.user
+        channel = user.voice.channel
+        bot = interaction.client
+
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
-        if member.id == ownerid:
+
+        if user.id == ownerid:
             await remove_mod(bot=bot, guildid=guild.id, ownerid=ownerid, memberid=self.values[0])
             embed = discord.Embed(title="Success", description=f"You removed <@{self.values[0]}> as a mod.")
         else:
@@ -937,7 +997,7 @@ class KickSelectMenu(discord.ui.UserSelect):
         ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
         modids = await get_mods(bot=bot, guildid=guild.id, ownerid=ownerid)
         current_permitted_memberids = await get_current_permitted_member(bot=bot, channelid=channel.id)
-        if user.id == ownerid or ownerid in modids:
+        if (user.id == ownerid or ownerid in modids):
             if member.id == ownerid:
                 embed = discord.Embed(title="Error", description=f"You cant kick {member.mention}, because he is the owner of the channel.")
             elif member.id in modids:
@@ -986,3 +1046,23 @@ def hash_password(password):
     salt = b"\x83\xcf\xe4\xde\x8a;\x1e\x94\xe9\x9fB_7V\xd34Z\x01'\xcc\xe5\xc7cxT\x1d\x0c\xbcn<#$"  #os.urandom(32)
     hashedpassword = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt=salt, iterations = 100000) # The hash digest algorithm for HMAC # Convert the password to bytes#salt, # Provide the salt # Convert the password to bytes # It is recommended to use at least 100,000 iterations of SHA-256 
     return(hashedpassword)
+
+async def checkifuserincvc(interaction):
+        guild = interaction.guild
+        member = interaction.user
+        if member.voice is None:
+            embed = discord.Embed(title="Error", description="You arent in a custom voicechannel.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return(False)
+        else:
+            channel = member.voice.channel
+
+        bot = interaction.client
+        ownerid, name, status, vclimit, password = await get_current_cvc(bot=bot, channelid=channel.id)
+
+        if ownerid is None:
+            embed = discord.Embed(title="Error", description="You arent in a custom voicechannel.")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return(False)
+        else:
+            return(True)

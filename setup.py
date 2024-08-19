@@ -5,8 +5,9 @@ import gettext
 
 #own modules:
 from checks import check4dm
-from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid, check4cvcstatus, change_customvc_status, de_activate_permission, get_permissions
+from sqlitehandler import get_autorole, get_autoroles, update_autorole_2_other_membergroup, insert_autorole, delete_all_autoroles, update_logchannelid, activate_levelsystem, deactivate_levelsystem, update_voicetime, update_messagecounter, change_xp_by, get_levelrole, check4levelroles, create_levelrole, delete_levelrole, get_all_levelroleids, reset_memberstats, update_levelingpingchannel, insert_into_welcomemessage, activate_ticketsystem, deactivate_ticketsystem, update_channel_ticketsystem, get_ticketsystem_status, update_opentickets_category_ticketsystem, update_closedtickets_category_ticketsystem, delete_welcomemessage, update_logwebhookid, check4cvcstatus, change_customvc_status, de_activate_permission, get_permissions, get_xp_voicetime_messagessent
 from ticketsystem import OpenTicketButton
+from customvoicechat import send_controlmenu
 
 async def setupcommand(interaction, bot):
     if await check4dm(interaction) == False:
@@ -341,7 +342,14 @@ class activButtonCVcSetup(discord.ui.View):
         bot = interaction.client
         guild = interaction.guild
         customvcscategory = await guild.create_category(name = "| Custom VCs |")
-        join2createchannel = await customvcscategory.create_voice_channel(name="Join to create")
+        join2createchannel = await customvcscategory.create_voice_channel(name="Join to create", position=0)
+        cvccontrolmenuchannel = await customvcscategory.create_text_channel(name="Controlmenu", position=1, overwrites={
+            guild.default_role: discord.PermissionOverwrite(
+            send_messages=False,
+            )
+        })
+
+        await send_controlmenu(channel=cvccontrolmenuchannel)
         await change_customvc_status(bot=bot, status=True, guildid=guild.id, channelid=join2createchannel.id)
         embed = discord.Embed(title=f'Success', description=f"You activated Custom VCs. Test it here out: {join2createchannel.mention}.", color=discord.Color.green())
         await interaction.response.send_message(embed = embed, ephemeral = True)
@@ -490,12 +498,22 @@ class CreateLevelrole(discord.ui.View):
     async def createselfrolebutton(self, interaction: discord.Interaction, button: discord.ui.button):
         roleid = int(self.role[0].id)
         bot=interaction.client
+        guild = interaction.guild
         if await get_levelrole(bot=bot, roleid=roleid) == False: 
             guildid=interaction.guild.id
             level=self.level
             keeprole=self.keeprole
             await create_levelrole(bot=bot, guildid=guildid, roleid=roleid, level=level, keeprole=keeprole)
-            await interaction.response.send_message(f"Success the levelrole was created.", ephemeral=True)
+            await interaction.response.send_message(f"Success the levelrole was created. Adding levelrole to old users", ephemeral=True)
+            for member in guild.members:
+                xp, voicetime, messagessent = await get_xp_voicetime_messagessent(bot=bot, guildid=guildid, memberid=member.id)
+                if xp >= (25*level**2):
+                    if member.bot:
+                        pass
+                    else:
+                        member.add_roles(self.role[0])
+                        await asyncio.sleep(1)
+            
         else:
             await interaction.response.send_message(f"This role is already used.", ephemeral=True)
 
@@ -513,7 +531,7 @@ class LevelRole2RemoveSelectMenu(discord.ui.RoleSelect):
         super().__init__(placeholder="Select the levelrole to remove it")
 
     async def callback(self, interaction: discord.Interaction):
-        await delete_levelrole(bot=interaction.client, roleid=self.values[0])
+        await delete_levelrole(bot=interaction.client, roleid=self.values[0].id)
         await interaction.response.send_message(content=f"Success the levelrole was deleted.", ephemeral=True)
 
 class ViewLevelPingSetup(discord.ui.View):

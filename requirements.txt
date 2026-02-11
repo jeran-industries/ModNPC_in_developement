@@ -3,5 +3,5 @@ discord.py==2.3.2
 discord.ext.context==0.1.8
 aiosqlite==0.20.0
 requests==2.32.4
-pillow==10.3.0
+pillow==12.1.1
 ./libs/asqlite-master.zip
